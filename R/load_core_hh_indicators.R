@@ -1,10 +1,11 @@
 #' load_core_hh_indicators
 #'
-#' @param country_code 
+#' @param input_df The fetched data frame using the `fetch_msna` function
+#' @param country_code The country code
 #'
 #' @return named list containing variable column names and labels
 
-load_core_hh_indicators <-  function(country_code="irq"){
+load_core_hh_indicators <-  function(input_df, country_code="irq"){
   if (country_code=="irq"){
     res <- list(
       `Food Consumption Score (numeric)`= "fcs",
@@ -66,7 +67,13 @@ load_core_hh_indicators <-  function(country_code="irq"){
     )
     
   }
-  return(res)
+  
+  # select the given columns on the fetched msna dataset
+  df_msna_cols <- input_df |>
+    select(any_of(purrr::map_chr(res, ~.x))) |>
+    mutate(country_code = country_code)
+  
+  return(df_msna_cols)
 }
 
 
