@@ -24,6 +24,13 @@ load_core_hh_indicators <-  function(country_code="irq"){
   }
   if(country_code=="som"){
     res <- list(
+      `Respondent Gender` = "respondent_gender",
+      `Respondent Age` = "respondent_age",
+      `Region` = "region",
+      `District` = "district",
+      `Reside in an IDP settlement` = "idp_settlement",
+      `Village/settlement/IDP site` = "settlements",
+      `Household Size` = "hh_size",
       `Household's total cash income from all income sources` = "total_house_income",
       `If yes, what is yoour household's current total amount of debt in USD` = "total_hh_debt",
       `Drinking` = "drinking_water",
@@ -47,7 +54,9 @@ load_core_hh_indicators <-  function(country_code="irq"){
       `Recent displacement Flooding (riverine and flash flood)` = "factors_recent_displacement/flooding",
       `Recent displacement Drought (lack of food, water, livestock loss)` = "factors_recent_displacement/drought",
       `Recent displacement Desert locust invasion` = "factors_recent_displacement/desert_locust",
-      `Have access to your current shelter in the next 6 months` = "shelter_access"
+      `Have access to your current shelter in the next 6 months` = "shelter_access",
+      `Latitude` = "Lat",
+      `Longitude` = "Lon"
     )
   }
   if(country_code=="nga"){
