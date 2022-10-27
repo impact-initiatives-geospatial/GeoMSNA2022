@@ -57,7 +57,8 @@ load_core_hh_indicators <-  function(input_df, country_code="irq"){
       `Recent displacement Desert locust invasion` = "factors_recent_displacement/desert_locust",
       `Have access to your current shelter in the next 6 months` = "shelter_access",
       `Latitude` = "Lat",
-      `Longitude` = "Lon"
+      `Longitude` = "Lon",
+      `uuid` = "uuid"
     )
   }
   if(country_code=="nga"){
