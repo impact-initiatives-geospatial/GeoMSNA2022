@@ -3,5 +3,7 @@
 .RData
 .Ruserdata
 /data/*
-.xlsx*
+*.xlsx
+*.html
 inst/doc
+!/**/.gitkeep

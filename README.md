@@ -38,8 +38,7 @@ provided. If you have the same variables as another country make sure
 you copy there label to use in your list.
 
 ``` r
-
-load_core_hh_indicators <-  function(country_code="irq"){
+load_core_hh_indicators <-  function(input_df, country_code="irq"){
   if (country_code=="irq"){
     res <- list(
       # labels on left - column names on right
@@ -66,6 +65,12 @@ load_core_hh_indicators <-  function(country_code="irq"){
     )
     
   }
-  return(res)
+  
+  # select the given columns on the fetched msna dataset
+  df_msna_cols <- input_df |>
+    select(any_of(purrr::map_chr(res, ~.x))) |>
+    mutate(country_code = country_code)
+  
+  return(df_msna_cols)
 }
 ```
