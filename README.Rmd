@@ -110,8 +110,18 @@ load_core_hh_indicators <-  function(input_df, country_code="irq"){
       `Main HH need` = "hh_first_priority_need",
       `Flooding Incident` = "nature_safety_incident/flooding",
       `Livestock decrease (rain)` = "hoh_livestock_decrease/drought",
-      `Humanitarian assistance Flood` = "barriers_humanitarian_assistance/yes_poor"
-      
+      `Humanitarian assistance Flood` = "barriers_humanitarian_assistance/yes_poor",
+      `Cash LSG` = "cash_lsg",
+      `Income cope crit indicator` = "cash_crit_ind",
+      `Food LSG` = "food_lsg",
+      `Food security crit indicator 1` = "food_crit_ind1",
+      `Food security crit indicator 2` = "food_crit_ind2",
+      `Health LSG` = "health_lsg",
+      `WASH LSG` = "wash_lsg",
+      `Shelter LSG` = "shelter_lsg",
+      `Protection LSG` = "protection_lsg",
+      `Education LSG` = "education_lsg",
+      `MSNI` = "msni"
     )
     
   }
