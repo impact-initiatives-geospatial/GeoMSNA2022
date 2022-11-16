@@ -1,0 +1,274 @@
+---
+title: "IRQ::MCNA-Remote Sensing Analysis"
+author: "Mehedi KHAN"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+<style type="text/css">
+.main-container {
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(illuminate)
+devtools::load_all()
+
+data <- load_hh_data(country_code = "irq")
+source(here::here("scripts/irq_globals.R"))
+
+```
+
+## {.tabset}
+
+
+### Introduction 
+
+8 basic indicators for the Iraq MCNA are chosen for comparison with remote sensing data. The list of indicators and their descriptions are provided below.
+
+* `fcs` = Food Consumption Score (numeric)
+* `household_hunger_scale` = Household Hunger Scale (categorical)
+* `food_source` = Main source of food (categorical)
+* `head_seek_work`= Head of Household seeking for employment(categorical) 
+* `how_much_debt` = HH debt (numeric)
+* `inc_employment_pension` = HH income from employment and/or pension (numeric)
+* `medical_exp` =  Medical expense
+* `health_issue_chronic` =  Health issues chronic
+
+**Response Rate:**
+The quantity of data for each variable is depicted in the graph below. In the 12839 observations in the Iraq MCNA data, there appear to be no missing values for any of the variables except `how much debt` However, there are just three missing data in the `how much debt` column, which is a very small proportion of all the data. 
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+plot(response_rate_plot)
+
+```
+
+### Histograms {.tabset}
+
+**Note: As with any statistical investigation, it is advised to use the normally distributed data, hence it is crucial to examine the histograms.** 
+
+
+
+#### Food Consumption Score
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+histogram$fcs
+
+```
+
+#### Household Hunger Scale
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+histogram$household_hunger_scale
+
+```
+
+#### Debt
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+histogram$how_much_debt
+
+```
+
+
+#### Income
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+histogram$inc_employment_pension
+
+```
+
+#### Medical expense
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+histogram$medical_exp
+
+```
+
+#### NDVI
+* March
+```{r echo=F , fig.width = 30,fig.height = 10}
+histogram$rs_NDVI_Mar2022
+
+```
+
+* April
+```{r echo=F , fig.width = 30,fig.height = 10}
+histogram$rs_NDVI_Apr2022
+
+```
+
+* May
+```{r echo=F , fig.width = 30,fig.height = 10}
+histogram$rs_NDVI_May2022
+
+```
+
+#### Distance from water body
+
+* Using OSM
+```{r echo=F , fig.width = 30,fig.height = 10}
+histogram$Distance
+
+```
+
+* Using XXX
+```{r echo=F , fig.width = 30,fig.height = 10}
+histogram$rs_avg_dist_perm_water_pix_20172020
+
+```
+
+#### VCI
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+histogram$rs_VCI_Apr2022
+
+```
+
+
+### Satistical test {.tabset}
+
+
+
+#### Food consumption score
+
+<div style="text-align: center;">
+<span style="color: #EE5859;">**Relationship between distance from nearest Water body and FCS**</span>
+</div>
+
+
+
+Distance from water source is calculated from two different source -
+
+* Using OSM data 
+* XXXXXXXXXXXXX
+
+
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+fcs_distance_scater_plot
+
+```
+
+The accompanying scatter plot suggests that there may be a relationship between the score for food consumption and the distance to the next water body. Hence In order to verify the hypothesis, a Pearson correlation test was performed.
+
+* **Null hypothesis(H0):** There is no correlation between Distance from water body and FCS
+
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+DT::datatable(fcs_distance_test,caption = "Table: Correlation between Distance from water body and FCS",
+              options = list(dom = 't'))
+
+```
+
+
+According to the results, there is a modest inverse relationship between FCS and distance from the water body, which means that as distance grows, the food consumption score decreases. This also suggests that HH who are located far from a water body should list food as their top necessity.
+
+As `priority_needs.food` is a binary variable, Hence the following T test has been performed.
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+
+food_box_plots
+DT::datatable(food_need_distance_t_test,caption = "Table: T-test between distance from the water body and priority_needs.food" , options = list(dom = 't'))
+
+
+
+```
+
+Even if the difference is very little, the aforementioned table and boxplot show that there is a significant difference (p is less than.05.) in mean between those who responded "yes" to priority needs.food and those who responded "no" 
+
+
+* **Result:: Households far from water bodies have low food consumption score and there is also evidence that the distance from water bodies are proportional to food needs** 
+
+
+---
+
+<div style="text-align: center;">
+<span style="color: #EE5859;">**Relationship between NDVI and FCS**</span>
+</div>
+
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+fcs_NDVI
+
+```
+
+**Interpretation::The food consumption score (high means good) increases for March and April as vegetation health/cover increases, but the trend is the opposite for May->** <span style="color: #005D98;">_**During FGDs people said that there is less work during winter and spring because of the codl and rain so daily workers could work less**_</span>
+
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+
+DT::datatable(fcs_ndvi_test,caption = "Table: Correlation test between NDVI and FCS",
+              options = list(dom = 't'))
+
+
+```
+
+
+
+<div style="text-align: center;">
+<span style="color: #EE5859;">**Relationship between  VCI and FCS**</span>
+</div>
+
+
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+fcs_vci
+
+DT::datatable(fcs_vci_test,caption = "Table: Correlation test between VCI and FCS",
+              options = list(dom = 't'))
+
+
+```
+
+
+
+
+
+#### Medical Expense
+
+**Assumption: Due to chronic diseases brought on by poor water quality, households adjacent to water sources may incur higher medical costs than those distant from water bodies.**
+
+
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+medical_water
+
+DT::datatable(medical_exp_distance_test,caption = "Table: Correlation test Medical Expense and Distance from water bodies",
+              options = list(dom = 't'))
+
+
+```
+
+
+The outcome of the aforementioned Pearson correlation test supports the null hypothesis (There is no relationship between the two variables). However, the results indicate a positive association between these two (we were expecting a negative relationship), which also means the farther away from water bodies, the higher the medical costs! The analyst initially finds it incomprehensible, but locals said that it might occur because most of Iraq's cities are situated along rivers. The rural area doesn't have a basic medical facility. So when the rural residents became ill, they had to travel to an urban region, which required additional lodging and transit expenses. Based on this supposition, a T-test was run to see if there were any differences between the top demands for a medical facility in urban and rural locations.
+
+```{r echo=F , fig.width = 30,fig.height = 10}
+
+health_box_plots
+### Box plot health care needed vs distance
+
+DT::datatable(health_need_distance_t_test,caption = "Table: T test between health care needed vs distance from water body",
+              options = list(dom = 't'))
+
+
+```
+ 
+
+**Result:**
+
+* There is a significant difference in the mean for those who reported yes to priority_needs.healthcare and those who reported “no”. 
+* This means in rural areas (as cities are close to waterbodies), there is a shortage of healthcare centres which results in increasing medical expense  
+
+
+
+
+

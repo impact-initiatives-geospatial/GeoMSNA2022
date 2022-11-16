@@ -1,0 +1,294 @@
+---
+title: "ab-nga_prelim"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ab-nga_prelim}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(GeoMSNA2022)
+library(tidyverse)
+library(janitor)
+library(xlsf)
+devtools::load_all()
+qs <-  readxl::read_excel(file.path(Sys.getenv("NGA_MSNA2022"),"nga_msna_2022_survey_choices.xlsx" ),sheet = "survey")
+choices <-  readxl::read_excel(file.path(Sys.getenv("NGA_MSNA2022"),"nga_msna_2022_survey_choices.xlsx" ),sheet = "choices")
+
+
+kobo<- xlsf::xlsf_load(survey = qs,choices = choices,label = "label::English",sm_sep ="/" )
+
+df <- load_hh_data(country_code = "nga")
+
+
+
+df_sel <- df |>
+  load_core_hh_indicators("nga") 
+
+df_sel |> 
+  glimpse()
+
+df$income
+
+```
+
+## Income
+
+Recieved info from team that income/poverty seems to be main driver of need. Let's dig deepr into that first
+```{r}
+
+xlsf::xlsf_query(kobo,"income",.col="xml_name")
+df <- xlsf::xlsf_relevel(df = df,xlsf = kobo,skip = "ward_of_origin")
+
+
+```
+
+```{T}
+df |> 
+  ggplot(aes(x= overall_income_estimate))+
+  geom_bar(stat="count")+
+  coord_flip()
+
+df|> 
+  ggplot(aes(x= reorder(overall_income_estimate,overall_income_estimate),fill=as_factor(`source_of_income/income_own`)))+
+  geom_bar(stat="count",position="dodge")+coord_flip()
+df|> 
+  ggplot(aes(x= overall_income_estimate,fill=as_factor(`source_of_income/no_income`)))+
+  geom_bar(stat="count",position="dodge")+coord_flip()
+df|> 
+  ggplot(aes(x= overall_income_estimate,fill=as_factor(`source_of_income/sal_work`)))+
+  geom_bar(stat="count",position="dodge")+coord_flip()
+
+df |> count(source_of_income ) |> arrange(desc(n)) |> print(n=52)
+
+
+df |> 
+  ggplot(aes(x= overall_income_estimate,y = rs_NDVI_z_score_Mar2022))+
+  geom_boxplot()
+
+```
+
+
+```{r}
+# figure out what these columns mean
+xlsf::xlsf_query(kobo,"enough_water_needs",.col="xml_name")
+```
+
+"not_enough" seems like an important one to look at first.           
+
+```{r}
+
+df |> 
+  count(`reaseon_for_displacement/drought`)
+df |> 
+  count(enough_water_needs) |> 
+  arrange(desc(n))
+
+df |> 
+  dplyr::select(starts_with("enough_water_needs")) |> 
+  glimpse()
+
+```
+
+
+```{r}
+
+
+
+need_fct_conversion <- list(`Cash LSG` = "cash_lsg",
+      `Lack income coping` = "cash_crit_ind",
+      `Food LSG` = "food_lsg",
+      `Not enough food` = "food_crit_ind1",
+      `Shock regarding food` = "food_crit_ind2",
+      `Health LSG` = "health_lsg",
+      `Access health care` = "health_crit_ind1",
+      `Challenges health care` = "health_crit_ind2",
+      `WASH LSG` = "wash_lsg",
+      `WASH water source` = "wash_crit_ind1",
+      `WASH enough water` = "wash_crit_ind3",
+      `Shelter LSG` = "shelter_lsg",
+      `Shelter damage and enclosure issues` = "shelter_crit_ind",
+      `Protection LSG` = "protection_lsg",
+      `Education LSG` = "education_lsg",
+      `MSNI` = "msni") |> names()
+
+
+df_sel <- df_sel |> 
+  mutate(
+    across(.cols = all_of(need_fct_conversion), .fns = ~ as_factor(.x))
+  )
+```
+
+
+boxplots could b interesting
+```{r}
+df_sel |> 
+  count(MSNI)
+
+rs_numeric_colnames <- df_sel |> 
+  select(starts_with("rs_")& where(is.numeric)) |> 
+  colnames()
+
+msni_rs_boxplots <- rs_numeric_colnames |> 
+  purrr::map(
+    ~ df_sel |> 
+      ggplot(aes(x= MSNI, y=!!sym(.x)))+
+      geom_boxplot()
+  ) |> 
+  set_names(rs_numeric_colnames)
+```
+
+
+# Shocks
+
+- Very few reported drought or flooding shocks.
+- reported flooding and drought had essentially no effect on MSNI
+
+```{r}
+
+df_sel |>
+  count(`Shock Flooding`)
+df_sel |>
+  count(`Shock Drought`)
+
+df_sel |> 
+      ggplot(aes(x= as.character(`Shock Flooding`), y=as.numeric(MSNI)))+
+      geom_boxplot()
+
+df_sel |> 
+      ggplot(aes(x= as.character(`Shock Drought`), y=as.numeric(MSNI)))+
+      geom_boxplot()
+
+```
+
+### Shocks Flooding
+
+```{r}
+shock_flooding <- rs_numeric_colnames |> 
+  purrr::map(
+    ~ df_sel |> 
+      ggplot(aes(x= as.character(`Shock Flooding`), y=!!sym(.x)))+
+      geom_boxplot()
+  ) |> 
+  set_names(rs_numeric_colnames)
+
+
+shock_flooding$rs_rx3d_30d_may
+shock_flooding$rs_rx3d_60d_may
+shock_flooding$rs_rx3d_90d_may
+
+shock_flooding$rs_rx5d_30d_may
+shock_flooding$rs_rx5d_60d_may
+shock_flooding$rs_rx5d_90d_may
+
+shock_flooding$rs_rx10d_30d_may
+shock_flooding$rs_rx10d_60d_may
+shock_flooding$rs_rx10d_90d_may
+
+
+```
+
+```{r}
+msni_rs_boxplots$rs_NDVI_pct_median_May2022
+msni_rs_boxplots$rs_ndvi_z_growing_season_21
+
+```
+
+
+### Health Care indicators
+Not much relation to the health care indicators
+```{r}
+df_sel |> 
+      ggplot(aes(x= as.character(`Access health care`), y=rs_healthcare_accessibility2019))+
+      geom_boxplot()
+
+df |> 
+  ggplot(aes(x= nearest_health_care, y=rs_healthcare_accessibility2019))+
+  geom_boxplot()+
+  coord_flip()
+
+df |> 
+  ggplot(aes(x= nearest_health_care, y=rs_healthcare_accessbility_walking_only2019))+
+  geom_boxplot()+
+  coord_flip()
+
+df |> 
+  ggplot(aes(x= nearest_health_care_adult, y=rs_healthcare_accessbility_walking_only2019))+
+  geom_boxplot()+
+  coord_flip()
+```
+
+
+```{r}
+
+
+df_agri <- df |> 
+  filter(prim_source_of_food=="own_prod") |> 
+  load_core_hh_indicators("nga")
+
+
+msni_rs_boxplots <- rs_numeric_colnames |> 
+  purrr::map(
+    ~ df_agri |> 
+      ggplot(aes(x= as.character(MSNI), y=!!sym(.x)))+
+      geom_boxplot()+coord_flip()
+  ) |> 
+  set_names(rs_numeric_colnames)
+
+shock_flooding_agri_hhs <- rs_numeric_colnames |> 
+  purrr::map(
+    ~ df_agri |> 
+      ggplot(aes(x= as.character(`Shock Flooding`), y=!!sym(.x)))+
+      geom_boxplot()
+  ) |> 
+  set_names(rs_numeric_colnames)
+
+msni_rs_boxplots$rs_May_spi1
+msni_rs_boxplots$rs_May_spi3
+msni_rs_boxplots$rs_May_spi6
+msni_rs_boxplots$rs_May_spi9
+msni_rs_boxplots$rs_May_spi12
+
+
+
+shock_flooding_agri_hhs$rs_rx3d_30d_may
+shock_flooding_agri_hhs$rs_rx3d_60d_may
+shock_flooding_agri_hhs$rs_rx3d_90d_may
+
+shock_flooding_agri_hhs$rs_rx5d_30d_may
+shock_flooding_agri_hhs$rs_rx5d_60d_may
+shock_flooding_agri_hhs$rs_rx5d_90d_may
+
+shock_flooding_agri_hhs$rs_rx10d_30d_may
+shock_flooding_agri_hhs$rs_rx10d_60d_may
+shock_flooding_agri_hhs$rs_rx10d_90d_may
+
+
+```
+
+```{r}
+res_test<- fast_collapse2(df = df_sel,x_vec = ck,disag=NULL,wt = "wt",sm_sep = "/")
+res_test |> View()
+res_test |> 
+  select(variable, variable_val, n_weighted, n_unweighted, `mean/pct`) |> View()
+```
+
+
+Access Health Care
+
+
+```{r}
+
+
+```
+  8*5.1
+```
+
