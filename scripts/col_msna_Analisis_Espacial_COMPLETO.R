@@ -291,7 +291,9 @@ for (i in variables) {
 # Exportar los dataframe generados
 writexl::write_xlsx(list("Analisis_Categorico" = anali_cate,
                          "Analisis_Numerico" = anali_nume_acu),
-                    "Output/REACH_COL_MSNA_Analisis_Espacial_COMPLETO_16112022.xlsx")
+                    file.path(output_dir(country_code = country_code),
+                    "REACH_COL_MSNA_Analisis_Espacial_COMPLETO_16112022.xlsx")
+)
 
 
 
@@ -384,7 +386,10 @@ for (i in sectores) {
 
 # Exportar los dataframe generados
 writexl::write_xlsx(list("Correlaciones" = correla),
-                    "Output/REACH_COL_MSNA_Analisis_EspacialCorrelaciones_COMPLETO_16112022.xlsx")
+                    file.path(
+                      output_dir(country_code = country_code),
+                      "REACH_COL_MSNA_Analisis_EspacialCorrelaciones_COMPLETO_16112022.xlsx")
+)
 
 
 ####################################################

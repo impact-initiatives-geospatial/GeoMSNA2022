@@ -1,3 +1,5 @@
+
+rm(list = ls())
 # Librerias
 library(data.table)
 library(stringr)
@@ -10,9 +12,9 @@ library(sf)
 library(purrr)
 library(vcd)
 
-rm(list = ls())
-devtools::load_all()
 
+devtools::load_all()
+country_code= "col"
 #devtools::install_github("https://github.com/jhoneder1993/jmmi_col/")
 # options para que no salga en notacion cientifica
 options(scipen = 100, digits = 4)
@@ -301,7 +303,10 @@ for (i in variables) {
 # Exportar los dataframe generados
 writexl::write_xlsx(list("Analisis_Categorico" = anali_cate,
                          "Analisis_Numerico" = anali_nume_acu),
-                    "Output/REACH_COL_MSNA_Analisis_Espacial_GIFMM_16112022.xlsx")
+                    file.path(
+                      output_dir(country_code = country_code),
+                    "REACH_COL_MSNA_Analisis_Espacial_GIFMM_16112022.xlsx")
+)
 
 
 
@@ -393,7 +398,11 @@ for (i in sectores) {
 
 # Exportar los dataframe generados
 writexl::write_xlsx(list("Correlaciones" = correla),
-                    "Output/REACH_COL_MSNA_Analisis_EspacialCorrelaciones_GIFMM_16112022.xlsx")
+                    file.path(
+                      output_dir(country_code = country_code),
+                      "REACH_COL_MSNA_Analisis_EspacialCorrelaciones_GIFMM_16112022.xlsx")
+                    )
+                    
 
 
 ####################################################
