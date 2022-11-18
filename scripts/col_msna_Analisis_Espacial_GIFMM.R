@@ -11,7 +11,7 @@ library(purrr)
 library(vcd)
 
 rm(list = ls())
-
+devtools::load_all()
 
 #devtools::install_github("https://github.com/jhoneder1993/jmmi_col/")
 # options para que no salga en notacion cientifica
