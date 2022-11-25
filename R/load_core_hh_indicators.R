@@ -63,10 +63,43 @@ load_core_hh_indicators <-  function(input_df, country_code="irq"){
   }
   if(country_code=="nga"){
     res <- list(
+      `uuid`= "uuid",
+      `State` = "state",
+      `Population Group` = "pop_group",
+      `Gender HoH` = "gender_hoh",
+      `Age HoH` = "age_hoh",
+      `Household size` = "hh_size",
+      `Income estimate` = "overall_income_estimate",
+      `Own livelihood assets` = "own_asset_hh",
+      `Amount debt` = "amount_of_debt",
+      `Own production` = "prim_source_of_food/own_prod",
+      `Shock Drought` = "diff_or_shocks/drought",
+      `Shock Flooding` = "diff_or_shocks/too_much_rain",
+      `Own farm animal` = "hoh_own_farm_animal",
+      `Land access` = "land_access_for_cultivation",
+      `Food unavailable` = "food_of_anykind",
+      `Food received` = "assistance_received_yn/food",
+      `Main HH need` = "hh_first_priority_need",
       `Flooding Incident` = "nature_safety_incident/flooding",
-      `Livestock decrease (rain)` = "hoh_livestock_decrease/drought"
+      `Livestock decrease (rain)` = "hoh_livestock_decrease/drought",
+      `Humanitarian assistance Flood` = "barriers_humanitarian_assistance/yes_poor",
+      `Cash LSG` = "cash_lsg",
+      `Lack income coping` = "cash_crit_ind",
+      `Food LSG` = "food_lsg",
+      `Not enough food` = "food_crit_ind1",
+      `Shock regarding food` = "food_crit_ind2",
+      `Health LSG` = "health_lsg",
+      `Access health care` = "health_crit_ind1",
+      `Challenges health care` = "health_crit_ind2",
+      `WASH LSG` = "wash_lsg",
+      `WASH water source` = "wash_crit_ind1",
+      `WASH enough water` = "wash_crit_ind3",
+      `Shelter LSG` = "shelter_lsg",
+      `Shelter damage and enclosure issues` = "shelter_crit_ind",
+      `Protection LSG` = "protection_lsg",
+      `Education LSG` = "education_lsg",
+      `MSNI` = "msni"
     )
-    
   }
   
   # select the given columns on the fetched msna dataset

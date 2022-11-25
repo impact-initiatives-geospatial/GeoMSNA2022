@@ -23,3 +23,33 @@ fetch_msna <- function(country_code="irq"){
     )
 }
 
+#' load_hh_data
+#'
+#' @param country_code 
+#'
+#' @return data.frame containing hh data
+#' @export
+#'
+#' @examples \dontrun{
+#' library(GeoMSNAs2022)
+#' load_hh_data("nga")
+#' }
+
+load_hh_data <-  function(country_code){
+  if(country_code=="nga"){
+    root_dir <-   Sys.getenv("NGA_MSNA2022")
+    dat_fp <- file.path(root_dir, "20221107_msna_with_rs_nga.rds")
+    res <- readr::read_rds(dat_fp)  
+  }
+  if(country_code=="irq"){
+    root_dir <-   Sys.getenv("IRQ_MSNA2022")
+    dat_fp <- file.path(root_dir, "irq_msna_clean_data_with_rs_indicators.csv")
+    res <- readr::read_csv(dat_fp)  
+  }
+  return(res)
+  
+}
+
+
+
+
