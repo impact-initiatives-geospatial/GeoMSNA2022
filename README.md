@@ -101,7 +101,7 @@ load_core_hh_indicators <-  function(input_df, country_code="irq"){
   
   # select the given columns on the fetched msna dataset
   df_msna_cols <- input_df |>
-    select(any_of(purrr::map_chr(res, ~.x))) |>
+    select(any_of(purrr::map_chr(res, ~.x)), starts_with("rs_")) |>
     mutate(country_code = country_code)
   
   return(df_msna_cols)

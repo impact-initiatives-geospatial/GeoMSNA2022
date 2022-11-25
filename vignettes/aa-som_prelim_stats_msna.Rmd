@@ -1,0 +1,211 @@
+---
+title: "aa-irq_prelim_stat_testing-IJ"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{aa-irq_prelim_stat_testing-IJ}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+```{r setup}
+#library(GeoMSNA2022)
+devtools::load_all()
+library(here)
+library(dplyr)
+library(readxl)
+library(openxlsx)
+library(purrr)
+library(srvyr)
+library(illuminate)
+library(sf)
+library(jtools)
+options(scipen = 999)
+
+```
+
+```{r}
+## Calling dataset
+
+# data_set <- fetch_msna("som")
+df_msna_dataset <- read_csv("data/som_clean_msna_with_rs.csv") 
+
+# add GRID_ID to the data
+df_msna_hex <- df_msna_dataset |> 
+  rename(latitude = Lat, longitude = Lon) |> 
+  st_as_sf(coords = c("longitude","latitude"), crs = 4326) |> 
+  st_join(som_hex) |> 
+  st_drop_geometry()
+
+# add some composites
+df_msna_hex_composites <- df_msna_hex |> 
+  mutate(fcs = (fs_cereals_grains*2 + fs_beans_nuts*3 + fs_vegetables_leaves +  fs_fruits + fs_meat_fish*4 + fs_milk_dairy*4 + fs_sugar*0.5 + fs_oil*0.5),
+         rcsi = rcsi_less_qlty +  (2 * rcsi_borrow) + rcsi_meal_size + (3 * rcsi_meal_adults) + rcsi_meals_freq
+  )
+
+
+# extract some aggregations
+# df_msna_hex_fcs <- df_msna_hex_composites |> 
+#   group_by(GRID_ID) |> 
+#   summarise(fcs_mean = mean(fcs, na.rm = TRUE),
+#          rs_NDVI_Mar2022 = mean(rs_NDVI_Mar2022, na.rm = TRUE))
+# 
+# ggplot2::ggplot(data = df_msna_hex_fcs, aes(x = rs_NDVI_Mar2022, y = fcs_mean)) +
+#   ggplot2::geom_point() +
+#   ggplot2::geom_smooth(method=lm) +
+#   ggpubr::stat_cor(method = "pearson", label.x = 0, label.y = 1)
+
+ggplot_rs_indcators <- function(input_dataset, group_by_col, input_x_col_rs, input_y_col) {
+  df_data_process <- input_dataset |> 
+    group_by({{group_by_col}}) |> 
+    summarise("{{input_x_col_rs}}" := mean({{input_x_col_rs}}, na.rm = TRUE),
+         "{{input_y_col}}" := mean({{input_y_col}}, na.rm = TRUE))
+    
+  ggplot2::ggplot(data = df_data_process, aes(x = {{input_x_col_rs}}, y = {{input_y_col}})) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth(method=lm) +
+  ggpubr::stat_cor(method = "pearson", label.x = 0, label.y = 1)
+  
+}
+
+```
+
+### Scatter plots
+
+#### Food Consumption Score (FCS) and NDVI
+
+```{r}
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_Mar2022, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_pct_median_Mar2022, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_z_score_Mar2022, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_Apr2022, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_pct_median_Apr2022, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_z_score_Apr2022, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_May2022, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_pct_median_May2022, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_z_score_May2022, fcs)
+
+```
+
+#### Reduced Coping Strategy Index (RCSI) and NDVI
+
+```{r}
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_Mar2022, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_pct_median_Mar2022, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_z_score_Mar2022, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_Apr2022, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_pct_median_Apr2022, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_z_score_Apr2022, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_May2022, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_pct_median_May2022, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_z_score_May2022, rcsi)
+```
+
+
+#### Food Consumption Score (FCS) and VCI
+
+```{r}
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_VCI_Mar2022, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_VCI_Apr2022, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_VCI_May2022, fcs)
+
+```
+
+#### Reduced Coping Strategy Index (RCSI) and VCI
+
+```{r}
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_VCI_Mar2022, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_VCI_Apr2022, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_VCI_May2022, rcsi)
+```
+
+#### Food Consumption Score (FCS) and rx
+
+```{r}
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx10d_30d_may, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx3d_30d_may, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx5d_30d_may, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx10d_60d_may, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx3d_60d_may, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx5d_60d_may, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx10d_90d_may, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx3d_90d_may, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx5d_90d_may, fcs)
+
+```
+
+#### Reduced Coping Strategy Index (RCSI) and rx
+
+```{r}
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx10d_30d_may, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx3d_30d_may, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx5d_30d_may, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx10d_60d_may, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx3d_60d_may, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx5d_60d_may, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx10d_90d_may, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx3d_90d_may, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx5d_90d_may, rcsi)
+
+```
+
+#### Food Consumption Score (FCS) and SPI
+
+```{r}
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi1, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi3, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi6, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi9, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi12, fcs)
+
+```
+
+#### Reduced Coping Strategy Index (RCSI) and SPI
+
+```{r}
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi1, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi3, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi6, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi9, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi12, rcsi)
+
+```
+
+#### Food Consumption Score (FCS) and other indicators
+
+```{r}
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_city_accessibility2015, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_healthcare_accessbility_walking_only2019, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_healthcare_accessibility2019, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NO2_column_number_density_mean, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_SO2_column_number_density_15km_mean, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_SO2_column_number_density_amf_mean, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_SO2_column_number_density_mean, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_cloud_fraction_mean, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_cloud_fraction_mean_1, fcs)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_tropospheric_NO2_column_number_density_mean, fcs)
+
+```
+
+#### Reduced Coping Strategy Index (RCSI) and other indicators
+
+```{r}
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_city_accessibility2015, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_healthcare_accessbility_walking_only2019, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_healthcare_accessibility2019, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NO2_column_number_density_mean, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_SO2_column_number_density_15km_mean, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_SO2_column_number_density_amf_mean, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_SO2_column_number_density_mean, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_cloud_fraction_mean, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_cloud_fraction_mean_1, rcsi)
+ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_tropospheric_NO2_column_number_density_mean, rcsi)
+
+```
