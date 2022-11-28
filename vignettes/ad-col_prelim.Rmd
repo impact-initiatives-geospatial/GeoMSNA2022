@@ -1,0 +1,112 @@
+---
+title: "ad-col_prelim"
+output: rmarkdown::html_vignette
+author: Jhon Montero & Zack Arno
+vignette: >
+  %\VignetteIndexEntry{ad-col_prelim}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+Libraries and any parameterization
+```{r setup}
+library(GeoMSNA2022)
+library(readxl)
+library(sf)
+library(tidyverse)
+library(srvyr)
+
+devtools::load_all()
+country_code="col"
+
+# you can add more vars here 
+vars_1_5_factor <-  c("msni")
+
+#' fct_expand_relevel
+#' @description for some reason fct_expand does not also relevel according to argument input order
+#' therefore have made a wrapper to expand and then relevel
+#' @param x  variable
+#' @param levels factor levels to expand to and relevel according to input order
+#'
+#' @return vector releveled
+fct_expand_relevel <-  function(x,levels){
+  x_fct <- as_factor(x)
+  x_expanded <-forcats::fct_expand(x_fct, levels)
+  x_releveled <-  forcats::fct_relevel(x_expanded,levels)
+  return(x_releveled)
+}
+
+
+```
+
+## Load data and survey
+```{r}
+data <- read_excel(file.path(input_dir(country_code="col"),"REACH_COL_LSGMSNI_08112022.xlsx"),
+                   guess_max = min(60000, n_max = NULL), sheet = "Sheet1")
+
+ks <- read_excel(file.path(input_dir(country_code="col"),"MSNA-6ta ronda- Formulario final_v7.xlsx"), 
+                     sheet = "survey",
+                     guess_max = min(60000, n_max = NULL))
+
+kc <- read_excel(file.path(input_dir(country_code="col"),
+                                "MSNA-6ta ronda- Formulario final_v7.xlsx"),
+                      sheet = "choices",
+                      guess_max = min(60000, n_max = NULL))
+
+gee <- readRDS(file.path(input_dir(country_code="col"),
+                         "20221026_col_rs_indicators_with_uuid.rds"))
+
+data_w_rs <- data |> 
+  left_join(gee, by = c("uuid"))
+```
+
+
+some tools I've made that I find handy for working with kobo data `{xlsf}`
+```{r}
+qdf <- xlsf::xlsf_load(survey = survey,choices = choices, data_main = data_w_rs,sm_sep = "/")
+
+# this just refactors dat according to kobo tool - it's nice pre processing step before aggregating
+# so levels don't get dropped
+qdf$data_main <- xlsf::xlsf_relevel(qdf$data_main,xlsf = qdf)
+
+qdf$data_main <- qdf$data_main |> 
+  mutate(
+    across(
+      .cols = all_of(vars_1_5_factor),
+      .fns = ~fct_expand_relevel(x=.x,levels = c("1","2","3","4","5"))
+  )
+  )
+
+```
+
+create survey object for weighted calcs
+```{r}
+dfsvy <-  srvyr::as_survey(qdf$data_main, weight=pesos)
+```
+
+## Indicator Break Down
+
+### Health Care Vs MSNI
+```{r}
+dfsvy |> 
+  group_by(msni) |> 
+  summarise(
+    distance_mean = survey_mean(rs_healthcare_accessibility2019,na.rm=T,"ci")
+    ) |>
+  ggplot(aes(x=msni,y=distance_mean,group=1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin= `distance_mean_low`,
+        ymax= `distance_mean_upp`), 
+                width=0.2)+
+  labs(x= "MSNI",y="Average Distance to Health Care (Oxford Access Indicator)")+
+  geom_point()+
+  theme_bw()
+```
