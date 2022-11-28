@@ -91,9 +91,18 @@ create survey object for weighted calcs
 dfsvy <-  srvyr::as_survey(qdf$data_main, weight=pesos)
 ```
 
-## Indicator Break Down
+## Analysis
 
-### Health Care Vs MSNI
+### Oxford access indicators
+
+Travel time to the nearest hospital or clinic was extracted from the Oxford 2019  Malaria Atlas Project data set for each HH. It would be interesting to understand the relationship between this variable and various humanitarian conditions. 
+
+Below we visualize average travel time by aggregated MSNI score. There appears to a relationship where increasing travel time correlates with higher MSNI scores. Some follow up points/thoughts:
+
+- Oxford access indicator may be a proxy/reflection of an urban-rural divide.
+  + rural hhs living under harder conditions?
+  + are there other layers with urban-rural delineations?
+
 ```{r}
 dfsvy |> 
   group_by(msni) |> 
@@ -106,7 +115,7 @@ dfsvy |>
     aes(ymin= `distance_mean_low`,
         ymax= `distance_mean_upp`), 
                 width=0.2)+
-  labs(x= "MSNI",y="Average Distance to Health Care (Oxford Access Indicator)")+
+  labs(x= "MSNI",y="Average Travel Time to Hospital/Clinic (minutes)")+
   geom_point()+
   theme_bw()
 ```
