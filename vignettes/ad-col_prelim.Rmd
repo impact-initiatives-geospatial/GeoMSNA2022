@@ -97,18 +97,25 @@ dfsvy <-  srvyr::as_survey(qdf$data_main, weight=pesos)
 
 Travel time to the nearest hospital or clinic was extracted from the Oxford 2019  Malaria Atlas Project data set for each HH. It would be interesting to understand the relationship between this variable and various humanitarian conditions. 
 
-Below we visualize average travel time by aggregated MSNI score. There appears to a relationship where increasing travel time correlates with higher MSNI scores. Some follow up points/thoughts:
+Below we visualize average travel time by aggregated MSNI score. There appears to a relationship where increasing travel time correlates with higher MSNI scores. Some follow up points/thoughts: 
 
 - Oxford access indicator may be a proxy/reflection of an urban-rural divide.
   + rural hhs living under harder conditions?
   + are there other layers with urban-rural delineations?
 
 ```{r}
+
 dfsvy |> 
   group_by(msni) |> 
   summarise(
     distance_mean = survey_mean(rs_healthcare_accessibility2019,na.rm=T,"ci")
     ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+  group_by(msni) |> 
+  count()
+  ) |> 
   ggplot(aes(x=msni,y=distance_mean,group=1))+
   geom_line(color = "red")+
   geom_errorbar(
@@ -117,5 +124,7 @@ dfsvy |>
                 width=0.2)+
   labs(x= "MSNI",y="Average Travel Time to Hospital/Clinic (minutes)")+
   geom_point()+
+  geom_text(
+            aes(label=n,x=msni,y=30, fill=NULL)) + 
   theme_bw()
 ```
