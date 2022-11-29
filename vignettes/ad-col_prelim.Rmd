@@ -27,7 +27,7 @@ devtools::load_all()
 country_code="col"
 
 # you can add more vars here 
-vars_1_5_factor <-  c("msni")
+vars_1_5_factor <-  c("lsg_score_sa", "lsg_score_wash", "msni")
 
 #' fct_expand_relevel
 #' @description for some reason fct_expand does not also relevel according to argument input order
@@ -42,7 +42,6 @@ fct_expand_relevel <-  function(x,levels){
   x_releveled <-  forcats::fct_relevel(x_expanded,levels)
   return(x_releveled)
 }
-
 
 ```
 
@@ -95,7 +94,264 @@ dfsvy <-  srvyr::as_survey(qdf$data_main, weight=pesos)
 
 ## Analysis
 
-### Oxford access indicators
+### OCHA
+
+Se encontraron correlaciones entre algunos LSG y MSNI con las variables de RS como:
+
+#### WASH
+
+WASH tuvo correlaciones con:
+
+##### rs_dist_coast
+
+Se observo que a mayor distancia menor el LSG en WASH (1, 2) y a menor distancias más alto o se presentan LSG en WASH (3, 4, 5)
+
+```{r}
+dfsvy |> 
+  filter(!is.na(lsg_score_wash) & pop_group %in% c("población de acogida", "PDI"))|>
+  group_by(lsg_score_wash) |> 
+  summarise(
+    distance_mean = survey_mean(rs_dist_coast,na.rm=T,"ci")
+    ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(lsg_score_wash) & pop_group %in% c("población de acogida", "PDI"))|>
+      group_by(lsg_score_wash) |> 
+      count()
+  ) |> 
+  ggplot(aes(x=lsg_score_wash,y=distance_mean,group=1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "WASH" , y = "Average Coast distance")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = lsg_score_wash, y = 220000, fill = NULL)) + 
+  theme_bw()
+```
+
+
+##### rs_city_accessibility2015
+  
+Los LSG de WASH con la variable de rs_city_accessibility2015 tendrian una correlacion positiva a mayor distancia mas alto el LSG, aunque en los niveles más altos(4, 5) los intervalos de confianza tambien son grandes.
+
+```{r}
+dfsvy |> 
+  filter(!is.na(lsg_score_wash) & pop_group %in% c("población de acogida", "PDI"))|>
+  group_by(lsg_score_wash) |> 
+  summarise(
+    distance_mean = survey_mean(rs_city_accessibility2015, na.rm = T, "ci")
+    ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(lsg_score_wash) & pop_group %in% c("población de acogida", "PDI"))|>
+      group_by(lsg_score_wash) |> 
+      count()
+  ) |> 
+  ggplot(aes(x = lsg_score_wash, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "WASH" , y = "Average City Accesibility")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = lsg_score_wash, y = 125, fill = NULL)) + 
+  theme_bw()
+```
+
+
+##### rs_healthcare_accessbility_walking_only2019
+
+Hay correlaciones positivas donde a mayor timpo de camino a un centro de salud más alto es el LSG.
+
+```{r}
+dfsvy |> 
+  filter(!is.na(lsg_score_wash) & pop_group %in% c("población de acogida", "PDI"))|>
+  group_by(lsg_score_wash) |> 
+  summarise(
+    distance_mean = survey_mean(rs_healthcare_accessbility_walking_only2019, na.rm = T, "ci")
+    ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(lsg_score_wash) & pop_group %in% c("población de acogida", "PDI"))|>
+      group_by(lsg_score_wash) |> 
+      count()
+  ) |> 
+  ggplot(aes(x = lsg_score_wash, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "WASH" , y = "Average Walking Time to Hospital/Clinic (minutes)")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = lsg_score_wash, y = 250, fill = NULL)) + 
+  theme_bw()
+```
+
+
+#### Seguridad Alimentaria
+
+Seguridad alimentaria tuvo correlaciones con:
+
+
+##### rs_May_spi12
+
+Standard Precipitation Index (SPI)
+
+is a comparison of the precipitation for 12 consecutive months with the same 12 consecutive months during all the previous years of available data. The SPI at these time scales reflect long-term precipitation patterns. Because these time scales are the cumulative result of shorter periods that may be above or below normal, the longer SPIs tend toward zero unless a specific trend is taking place.
+
+Therefore values > 0 indicators more rain during that 12 month time period “than normal” and values < 0 indicatore less rainfall “than normal”
+
+```{r}
+dfsvy |> 
+  filter(!is.na(lsg_score_sa) & pop_group %in% c("población de acogida", "PDI"))|>
+  group_by(lsg_score_sa) |> 
+  summarise(
+    distance_mean = survey_mean(rs_May_spi12, na.rm = T, "ci")
+    ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(lsg_score_sa) & pop_group %in% c("población de acogida", "PDI"))|>
+      group_by(lsg_score_sa) |> 
+      count()
+  ) |> 
+  ggplot(aes(x = lsg_score_sa, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "Food Security" , y = "Average 12-month SPI")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = lsg_score_sa, y = 1, fill = NULL)) + 
+  theme_bw()
+```
+
+
+#### Proteccion
+
+Proteccion tuvo correlaciones con:
+
+
+##### rs_city_accessibility2015
+
+
+```{r}
+dfsvy |> 
+  filter(!is.na(lsg_score_pro) & pop_group %in% c("población de acogida", "PDI"))|>
+  group_by(lsg_score_pro) |> 
+  summarise(
+    distance_mean = survey_mean(rs_city_accessibility2015, na.rm = T, "ci")
+    ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(lsg_score_pro) & pop_group %in% c("población de acogida", "PDI"))|>
+      group_by(lsg_score_pro) |> 
+      count()
+  ) |> 
+  ggplot(aes(x = lsg_score_pro, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "Food Security" , y = "Average 12-month SPI")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = lsg_score_pro, y = 1, fill = NULL)) + 
+  theme_bw()
+```
+
+
+#### MSNI
+
+MSNI tuvo correlaciones con:
+
+### rs_dist_coast
+
+What units does dist_coast have (time, meter)?
+
+- Se nota las diferencias de la zona costera de Colombia
+  + Hay diferencias entre la zona costera y el interior del pais?
+  
+```{r}
+dfsvy |> 
+  filter(!is.na(msni) & pop_group %in% c("población de acogida", "PDI"))|>
+  group_by(msni) |> 
+  summarise(
+    distance_mean = survey_mean(rs_dist_coast, na.rm = T, "ci")
+    ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(msni) & pop_group %in% c("población de acogida", "PDI"))|>
+      group_by(msni) |> 
+      count()
+  ) |> 
+  ggplot(aes(x = msni, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "MSNI" , y = "Average City Accesibility")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = msni, y = 200000, fill = NULL)) + 
+  theme_bw()
+```
+  
+  
+##### rs_city_accessibility2015
+
+What units does city_accessibility2015 have (time, meter)?
+
+- Esto estaria mostrando cosas similares a Oxford access indicators
+  + Las zonas rurales del país tienen condiciones más dificiles?
+  
+```{r}
+dfsvy |> 
+  filter(!is.na(msni) & pop_group %in% c("población de acogida", "PDI"))|>
+  group_by(msni) |> 
+  summarise(
+    distance_mean = survey_mean(rs_city_accessibility2015, na.rm = T, "ci")
+    ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(msni) & pop_group %in% c("población de acogida", "PDI"))|>
+      group_by(msni) |> 
+      count()
+  ) |> 
+  ggplot(aes(x = msni, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "MSNI" , y = "Average City Accessibility")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = msni, y = 120, fill = NULL)) + 
+  theme_bw()
+```
+  
+  
+##### rs_healthcare_accessibility2019
+
+###### Oxford access indicators
 
 Travel time to the nearest hospital or clinic was extracted from the Oxford 2019  Malaria Atlas Project data set for each HH. It would be interesting to understand the relationship between this variable and various humanitarian conditions. 
 
@@ -104,6 +360,336 @@ Below we visualize average travel time by aggregated MSNI score. There appears t
 - Oxford access indicator may be a proxy/reflection of an urban-rural divide.
   + rural hhs living under harder conditions?
   + are there other layers with urban-rural delineations?
+  
+```{r}
+dfsvy |> 
+  filter(!is.na(msni) & pop_group %in% c("población de acogida", "PDI"))|>
+  group_by(msni) |> 
+  summarise(
+    distance_mean = survey_mean(rs_healthcare_accessibility2019, na.rm = T, "ci")
+    ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(msni) & pop_group %in% c("población de acogida", "PDI"))|>
+      group_by(msni) |> 
+      count()
+  ) |> 
+  ggplot(aes(x = msni, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "MSNI" , y = "Average Travel Time to Hospital/Clinic (minutes)")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = msni, y = 40, fill = NULL)) + 
+  theme_bw()
+```
+  
+ 
+### GIFMM
+
+Para GIFMM la cantidad de sectores que tenian alguna correlacion con las variables de RS disminuyo considerablemente siendo el sector de WASH en donde se encontro una correlacion interesante.
+
+#### WASH
+
+##### rs_May_spi9
+
+las variables de spi6 y 12 tambien tuvieron correlacion con WASH pero fue la rs_May_spi9 la que tuvo la mayor correlacion por eso se tomo esta.
+Parece que cuando hubo mas lluvia de lo normal no hubo un LSG
+  
+```{r}
+dfsvy |> 
+  filter(!is.na(lsg_score_wash) & !(pop_group %in% c("población de acogida", "PDI")))|>
+  group_by(lsg_score_wash) |> 
+  summarise(
+    distance_mean = survey_mean(rs_May_spi9, na.rm = T, "ci")
+    ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(lsg_score_wash) & !(pop_group %in% c("población de acogida", "PDI")))|>
+      group_by(lsg_score_wash) |> 
+      count()
+  ) |> 
+  ggplot(aes(x = lsg_score_wash, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "WASH" , y = "Average 9-month SPI")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = lsg_score_wash, y = 1, fill = NULL)) + 
+  theme_bw()
+```
+  
+
+##### rs_col_climate_risk.riesgo_cc
+
+
+  
+```{r}
+dfsvy |> 
+  filter(!is.na(lsg_score_wash) & !(pop_group %in% c("población de acogida", "PDI")))|>
+  group_by(lsg_score_wash) |> 
+  summarise(
+    distance_mean = survey_mean(rs_col_climate_risk.riesgo_cc, na.rm = T, "ci")
+    ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(lsg_score_wash) & !(pop_group %in% c("población de acogida", "PDI")))|>
+      group_by(lsg_score_wash) |> 
+      count()
+  ) |> 
+  ggplot(aes(x = lsg_score_wash, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "WASH" , y = "Average Col Climate Risk")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = lsg_score_wash, y = 1, fill = NULL)) + 
+  theme_bw()
+```
+  
+  
+#### MSNI
+
+##### rs_May_spi9
+
+las variables de spi6 y 12 tambien tuvieron correlacion con el MSNI pero fue la rs_May_spi9 la que tuvo la mayor correlacion por eso se tomo esta.
+Para este caso en todas las severidades estuvieron cuando hubo más lluvia de lo normal
+  
+```{r}
+dfsvy |> 
+  filter(!is.na(msni) & !(pop_group %in% c("población de acogida", "PDI")))|>
+  group_by(msni) |> 
+  summarise(
+    distance_mean = survey_mean(rs_May_spi9, na.rm = T, "ci")
+    ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(msni) & !(pop_group %in% c("población de acogida", "PDI")))|>
+      group_by(msni) |> 
+      count()
+  ) |> 
+  ggplot(aes(x = msni, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "MSNI" , y = "Average 9-month SPI")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = msni, y = 1, fill = NULL)) + 
+  theme_bw()
+```
+
+
+##### rs_col_climate_risk.vn_vs_am
+No se observaron muchas diferencias
+  
+```{r}
+dfsvy |> 
+  filter(!is.na(msni) & !(pop_group %in% c("población de acogida", "PDI")))|>
+  group_by(msni) |> 
+  summarise(
+    distance_mean = survey_mean(rs_col_climate_risk.vn_vs_am, na.rm = T, "ci")
+    ) |>
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(msni) & !(pop_group %in% c("población de acogida", "PDI")))|>
+      group_by(msni) |> 
+      count()
+  ) |> 
+  ggplot(aes(x = msni, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "MSNI" , y = "Average Col Climate Risk")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = msni, y = 1, fill = NULL)) + 
+  theme_bw()
+```
+
+
+### COMPLETO
+
+Cuando se realizaron las correlaciones para todo el conjunto de datos hay una fuerte influencia de los datos de GIFMM lo que baja las correlaciones entre los LSG de algunos sectores con las variables de RS, siendo el sector con mayor correlacion el de WASH seguido del MSNI.
+
+#### WASH
+
+##### rs_dist_coast
+
+
+
+```{r}
+
+dfsvy |> 
+  filter(!is.na(lsg_score_wash)) %>% 
+           group_by(lsg_score_wash) %>% 
+  summarise(distance_mean = survey_mean(rs_dist_coast, na.rm = T, "ci")) %>% 
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(lsg_score_wash)) |> 
+      group_by(lsg_score_wash) |> 
+  count()) |> 
+  ggplot(aes(x = lsg_score_wash, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin= `distance_mean_low`,
+        ymax= `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "WASH", y = "Average Coast distance")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = lsg_score_wash, y = 220000, fill = NULL)) + 
+  theme_bw()
+```
+
+
+##### rs_May_spi12
+
+
+
+```{r}
+
+dfsvy |> 
+  filter(!is.na(lsg_score_wash)) %>% 
+           group_by(lsg_score_wash) %>% 
+  summarise(distance_mean = survey_mean(rs_May_spi12, na.rm = T, "ci")) %>% 
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(lsg_score_wash)) |> 
+      group_by(lsg_score_wash) |> 
+  count()) |> 
+  ggplot(aes(x = lsg_score_wash, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin= `distance_mean_low`,
+        ymax= `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "WASH", y = "Average 9-month SPI")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = lsg_score_wash, y = 1, fill = NULL)) + 
+  theme_bw()
+```
+
+
+##### rs_city_accessibility2015
+
+
+
+```{r}
+
+dfsvy |> 
+  filter(!is.na(lsg_score_wash)) %>% 
+           group_by(lsg_score_wash) %>% 
+  summarise(distance_mean = survey_mean(rs_city_accessibility2015, na.rm = T, "ci")) %>% 
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(lsg_score_wash)) |> 
+      group_by(lsg_score_wash) |> 
+  count()) |> 
+  ggplot(aes(x = lsg_score_wash, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin= `distance_mean_low`,
+        ymax= `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "WASH", y = "Average City Accessibility")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = lsg_score_wash, y = 1, fill = NULL)) + 
+  theme_bw()
+```
+
+
+##### rs_rx5d_60d_may
+
+###### Maximum Rainfall Events
+
+We have chosen to calculate Maximum 3 day, 5 day, and 10 day rainfall over 30, 60, and 90 days. To break it down further: all calculations were started May 31, for 30 day calculations we looked at the period from 01 May - May 31 and calculated and found the 3 day consecutive period with the most rainfall in that 30 day window.
+
+
+```{r}
+
+dfsvy |> 
+  filter(!is.na(lsg_score_wash)) %>% 
+           group_by(lsg_score_wash) %>% 
+  summarise(distance_mean = survey_mean(rs_rx5d_60d_may, na.rm = T, "ci")) %>% 
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+      filter(!is.na(lsg_score_wash)) |> 
+      group_by(lsg_score_wash) |> 
+  count()) |> 
+  ggplot(aes(x = lsg_score_wash, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin= `distance_mean_low`,
+        ymax= `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x= "WASH", y = "Average Maximum Rainfall Events (mm)")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = lsg_score_wash, y = 200, fill = NULL)) + 
+  theme_bw()
+```
+
+
+#### MSNI
+
+Vale la pena hacer el analisis con el conjunto de datos completo? o es mejor trabajar solamente con el conjunto de datos para OCHA??
+
+##### rs_city_accessibility2015
+
+```{r}
+
+dfsvy %>% group_by(msni) %>% 
+  summarise(distance_mean = survey_mean(rs_city_accessibility2015, na.rm = T , "ci")) %>% 
+  left_join(
+    #get raw counts
+    dfsvy$variables |> 
+  group_by(msni) |> 
+  count()) |> 
+  ggplot(aes(x = msni, y = distance_mean, group = 1))+
+  geom_line(color = "red")+
+  geom_errorbar(
+    aes(ymin = `distance_mean_low`,
+        ymax = `distance_mean_upp`), 
+                width = 0.2)+
+  labs(x = "MSNI", y = "Average City Accessibility")+
+  geom_point()+
+  geom_text(
+            aes(label = n, x = msni, y = 80, fill = NULL)) + 
+  theme_bw()
+```
+
+
+##### rs_healthcare_accessibility2019
+
+What units does city_accessibility2015 have (time, meter)?
+
+- Esto estaria mostrando cosas similares a Oxford access indicators
+  + Las zonas rurales del país tienen condiciones más dificiles?
 
 ```{r}
 
@@ -131,63 +717,22 @@ dfsvy |>
   theme_bw()
 ```
 
-### coast distance
-
-What units does dist_coast have (time, meter)?
-
-- Se nota las diferencias de la zona costera de Colombia
-  + Hay diferencias entre la zona costera y el interior del pais?
 
 
-```{r}
+```{r, include=FALSE}
+# Prueba interna
+dfsvy %>% filter(pop_group == "Población refugiada y migrante venezolana") %>% 
+  summarise(mean = mean(i_personas,na.rm=T),
+            n = n())
 
-dfsvy %>% group_by(msni) %>% 
-  summarise(distance_mean = survey_mean(rs_dist_coast,na.rm=T,"ci")) %>% 
-  left_join(
-    #get raw counts
-    dfsvy$variables |> 
-  group_by(msni) |> 
-  count()) |> 
-  ggplot(aes(x=msni,y=distance_mean,group=1))+
-  geom_line(color = "red")+
-  geom_errorbar(
-    aes(ymin= `distance_mean_low`,
-        ymax= `distance_mean_upp`), 
-                width=0.2)+
-  labs(x= "MSNI",y="Average Coast distance")+
-  geom_point()+
-  geom_text(
-            aes(label=n,x=msni,y=220000, fill=NULL)) + 
-  theme_bw()
 ```
 
-
-### city_accessibility2015
-
-What units does city_accessibility2015 have (time, meter)?
-
-- Esto estaria mostrando cosas similares a Oxford access indicators
-  + Las zonas rurales del país tienen condiciones más dificiles?
+```{r, include=FALSE}
+# Prueba interna
+dfsvy %>% filter(pop_group == "Población refugiada y migrante venezolana") %>% 
+  summarise(mean = survey_mean(i_personas,na.rm=T, "ci"),
+            n = n())
 
 
-```{r}
 
-dfsvy %>% group_by(msni) %>% 
-  summarise(distance_mean = survey_mean(rs_city_accessibility2015,na.rm=T,"ci")) %>% 
-  left_join(
-    #get raw counts
-    dfsvy$variables |> 
-  group_by(msni) |> 
-  count()) |> 
-  ggplot(aes(x=msni,y=distance_mean,group=1))+
-  geom_line(color = "red")+
-  geom_errorbar(
-    aes(ymin= `distance_mean_low`,
-        ymax= `distance_mean_upp`), 
-                width=0.2)+
-  labs(x= "MSNI",y="Average City Accessibility")+
-  geom_point()+
-  geom_text(
-            aes(label=n,x=msni,y=100, fill=NULL)) + 
-  theme_bw()
 ```
