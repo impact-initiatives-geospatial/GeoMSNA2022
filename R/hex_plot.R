@@ -12,7 +12,7 @@
 hex_plot_mean_rs_mean_msna_ind <- function(input_dataset, group_by_col, 
                                            input_x_col_rs, input_y_col) {
   df_data_process <- input_dataset |> 
-    group_by({{group_by_col}}) |> 
+    group_by(!!sym(group_by_col)) |> 
     summarise({{input_x_col_rs}} := mean(!!sym(input_x_col_rs), na.rm = TRUE),
               {{input_y_col}} := mean(!!sym(input_y_col), na.rm = TRUE))
   
@@ -38,7 +38,7 @@ hex_plot_mean_rs_count_msna_ind <- function(input_dataset, group_by_col,
                                             input_x_col_rs, input_y_col, 
                                             search_y_col = c("yes")) {
   df_data_process <- input_dataset |> 
-    group_by({{group_by_col}}) |> 
+    group_by(!!sym(group_by_col)) |> 
     summarise({{input_x_col_rs}} := mean(!!sym(input_x_col_rs), na.rm = TRUE),
               {{input_y_col}} := sum(!!sym(input_y_col) %in% search_y_col, na.rm = TRUE))
   
