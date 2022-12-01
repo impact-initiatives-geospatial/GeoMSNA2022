@@ -1,26 +1,28 @@
 ---
-title: "aa-irq_prelim_stat_testing-IJ"
-output: rmarkdown::html_vignette
+title: "aa-som_prelim_stat_msna_rs"
+output: rmarkdown::html_document
 vignette: >
-  %\VignetteIndexEntry{aa-irq_prelim_stat_testing-IJ}
+  %\VignetteIndexEntry{aa-som_prelim_stat_msna_rs}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
+  echo=FALSE,
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  warning = F, 
+  message = F
 )
 ```
 
 
-```{r setup}
+```{r }
 #library(GeoMSNA2022)
 devtools::load_all()
 library(here)
-library(dplyr)
-library(readxl)
+library(tidyverse)
 library(openxlsx)
 library(purrr)
 library(srvyr)
@@ -35,177 +37,275 @@ options(scipen = 999)
 ## Calling dataset
 
 # data_set <- fetch_msna("som")
-df_msna_dataset <- read_csv("data/som_clean_msna_with_rs.csv") 
-
-# add GRID_ID to the data
-df_msna_hex <- df_msna_dataset |> 
-  rename(latitude = Lat, longitude = Lon) |> 
-  st_as_sf(coords = c("longitude","latitude"), crs = 4326) |> 
-  st_join(som_hex) |> 
-  st_drop_geometry()
-
-# add some composites
-df_msna_hex_composites <- df_msna_hex |> 
-  mutate(fcs = (fs_cereals_grains*2 + fs_beans_nuts*3 + fs_vegetables_leaves +  fs_fruits + fs_meat_fish*4 + fs_milk_dairy*4 + fs_sugar*0.5 + fs_oil*0.5),
-         rcsi = rcsi_less_qlty +  (2 * rcsi_borrow) + rcsi_meal_size + (3 * rcsi_meal_adults) + rcsi_meals_freq
-  )
-
-
-# extract some aggregations
-# df_msna_hex_fcs <- df_msna_hex_composites |> 
-#   group_by(GRID_ID) |> 
-#   summarise(fcs_mean = mean(fcs, na.rm = TRUE),
-#          rs_NDVI_Mar2022 = mean(rs_NDVI_Mar2022, na.rm = TRUE))
-# 
-# ggplot2::ggplot(data = df_msna_hex_fcs, aes(x = rs_NDVI_Mar2022, y = fcs_mean)) +
-#   ggplot2::geom_point() +
-#   ggplot2::geom_smooth(method=lm) +
-#   ggpubr::stat_cor(method = "pearson", label.x = 0, label.y = 1)
-
-ggplot_rs_indcators <- function(input_dataset, group_by_col, input_x_col_rs, input_y_col) {
-  df_data_process <- input_dataset |> 
-    group_by({{group_by_col}}) |> 
-    summarise("{{input_x_col_rs}}" := mean({{input_x_col_rs}}, na.rm = TRUE),
-         "{{input_y_col}}" := mean({{input_y_col}}, na.rm = TRUE))
-    
-  ggplot2::ggplot(data = df_data_process, aes(x = {{input_x_col_rs}}, y = {{input_y_col}})) +
-  ggplot2::geom_point() +
-  ggplot2::geom_smooth(method=lm) +
-  ggpubr::stat_cor(method = "pearson", label.x = 0, label.y = 1)
-  
-}
+df_msna_dataset <- read_csv("../data/som_clean_msna_with_rs_hex.csv") 
 
 ```
 
-### Scatter plots
+# RS related indicators in the tool  {.tabset}
 
-#### Food Consumption Score (FCS) and NDVI
+## NDVI
+
+#### hh_size and NDVI
 
 ```{r}
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_Mar2022, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_pct_median_Mar2022, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_z_score_Mar2022, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_Apr2022, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_pct_median_Apr2022, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_z_score_Apr2022, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_May2022, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_pct_median_May2022, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_z_score_May2022, fcs)
-
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Mar2022", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Mar2022", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Mar2022", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Apr2022", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Apr2022", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Apr2022", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_May2022", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_May2022", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_May2022", "hh_size")
 ```
-
-#### Reduced Coping Strategy Index (RCSI) and NDVI
+#### total_house_income and NDVI
 
 ```{r}
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_Mar2022, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_pct_median_Mar2022, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_z_score_Mar2022, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_Apr2022, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_pct_median_Apr2022, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_z_score_Apr2022, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_May2022, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_pct_median_May2022, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NDVI_z_score_May2022, rcsi)
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Mar2022", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Mar2022", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Mar2022", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Apr2022", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Apr2022", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Apr2022", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_May2022", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_May2022", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_May2022", "total_house_income")
 ```
 
-
-#### Food Consumption Score (FCS) and VCI
+#### total_hh_debt and NDVI
 
 ```{r}
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_VCI_Mar2022, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_VCI_Apr2022, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_VCI_May2022, fcs)
-
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Mar2022", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Mar2022", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Mar2022", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Apr2022", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Apr2022", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Apr2022", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_May2022", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_May2022", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_May2022", "total_hh_debt")
 ```
 
-#### Reduced Coping Strategy Index (RCSI) and VCI
+#### drinking_water and NDVI
 
 ```{r}
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_VCI_Mar2022, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_VCI_Apr2022, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_VCI_May2022, rcsi)
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Mar2022", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Mar2022", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Mar2022", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Apr2022", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Apr2022", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Apr2022", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_May2022", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_May2022", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_May2022", "drinking_water")
 ```
 
-#### Food Consumption Score (FCS) and rx
+#### cooking_water and NDVI
 
 ```{r}
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx10d_30d_may, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx3d_30d_may, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx5d_30d_may, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx10d_60d_may, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx3d_60d_may, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx5d_60d_may, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx10d_90d_may, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx3d_90d_may, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx5d_90d_may, fcs)
-
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Mar2022", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Mar2022", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Mar2022", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Apr2022", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Apr2022", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Apr2022", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_May2022", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_May2022", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_May2022", "cooking_water")
 ```
 
-#### Reduced Coping Strategy Index (RCSI) and rx
+#### hh_fsl_shocks/drought and NDVI
 
 ```{r}
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx10d_30d_may, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx3d_30d_may, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx5d_30d_may, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx10d_60d_may, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx3d_60d_may, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx5d_60d_may, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx10d_90d_may, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx3d_90d_may, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_rx5d_90d_may, rcsi)
-
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Mar2022", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Mar2022", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Mar2022", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Apr2022", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Apr2022", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Apr2022", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_May2022", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_May2022", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_May2022", "hh_fsl_shocks/drought")
 ```
 
-#### Food Consumption Score (FCS) and SPI
+#### hh_fsl_shocks/crop_disease and NDVI
 
 ```{r}
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi1, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi3, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi6, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi9, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi12, fcs)
-
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Mar2022", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Mar2022", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Mar2022", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Apr2022", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Apr2022", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Apr2022", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_May2022", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_May2022", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_May2022", "hh_fsl_shocks/crop_disease")
 ```
 
-#### Reduced Coping Strategy Index (RCSI) and SPI
+#### hh_fsl_shocks/flooding and NDVI
 
 ```{r}
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi1, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi3, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi6, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi9, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_May_spi12, rcsi)
-
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Mar2022", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Mar2022", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Mar2022", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Apr2022", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Apr2022", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Apr2022", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_May2022", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_May2022", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_May2022", "hh_fsl_shocks/flooding")
 ```
 
-#### Food Consumption Score (FCS) and other indicators
+## VCI
+#### hh_size and VCI
 
 ```{r}
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_city_accessibility2015, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_healthcare_accessbility_walking_only2019, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_healthcare_accessibility2019, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NO2_column_number_density_mean, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_SO2_column_number_density_15km_mean, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_SO2_column_number_density_amf_mean, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_SO2_column_number_density_mean, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_cloud_fraction_mean, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_cloud_fraction_mean_1, fcs)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_tropospheric_NO2_column_number_density_mean, fcs)
-
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Mar2022", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Apr2022", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_May2022", "hh_size")
 ```
 
-#### Reduced Coping Strategy Index (RCSI) and other indicators
+#### total_house_income and VCI
 
 ```{r}
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_city_accessibility2015, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_healthcare_accessbility_walking_only2019, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_healthcare_accessibility2019, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_NO2_column_number_density_mean, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_SO2_column_number_density_15km_mean, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_SO2_column_number_density_amf_mean, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_SO2_column_number_density_mean, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_cloud_fraction_mean, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_cloud_fraction_mean_1, rcsi)
-ggplot_rs_indcators(df_msna_hex_composites, GRID_ID, rs_tropospheric_NO2_column_number_density_mean, rcsi)
-
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Mar2022", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Apr2022", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_May2022", "total_house_income")
 ```
+
+#### total_hh_debt and VCI
+
+```{r}
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Mar2022", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Apr2022", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_May2022", "total_hh_debt")
+```
+
+#### drinking_water and VCI
+
+```{r}
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Mar2022", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Apr2022", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_May2022", "drinking_water")
+```
+
+#### cooking_water and VCI
+
+```{r}
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Mar2022", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Apr2022", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_May2022", "cooking_water")
+```
+
+#### hh_fsl_shocks/drought and VCI
+
+```{r}
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Mar2022", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Apr2022", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_May2022", "hh_fsl_shocks/drought")
+```
+
+#### hh_fsl_shocks/crop_disease and VCI
+
+```{r}
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Mar2022", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Apr2022", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_May2022", "hh_fsl_shocks/crop_disease")
+```
+
+#### hh_fsl_shocks/flooding and VCI
+
+```{r}
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Mar2022", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Apr2022", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_May2022", "hh_fsl_shocks/flooding")
+```
+
+## SPI
+
+#### hh_size and SPI
+
+```{r}
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi1", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi3", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi6", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi9", "hh_size")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi12", "hh_size")
+```
+
+#### total_house_income and SPI
+
+```{r}
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi1", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi3", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi6", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi9", "total_house_income")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi12", "total_house_income")
+```
+
+#### total_hh_debt and SPI
+
+```{r}
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi1", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi3", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi6", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi9", "total_hh_debt")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi12", "total_hh_debt")
+```
+
+#### drinking_water and SPI
+
+```{r}
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi1", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi3", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi6", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi9", "drinking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi12", "drinking_water")
+```
+
+#### cooking_water and SPI
+
+```{r}
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi1", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi3", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi6", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi9", "cooking_water")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi12", "cooking_water")
+```
+
+#### hh_fsl_shocks/drought and SPI
+
+```{r}
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi1", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi3", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi6", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi9", "hh_fsl_shocks/drought")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi12", "hh_fsl_shocks/drought")
+```
+
+#### hh_fsl_shocks/crop_disease and SPI
+
+```{r}
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi1", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi3", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi6", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi9", "hh_fsl_shocks/crop_disease")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi12", "hh_fsl_shocks/crop_disease")
+```
+
+#### hh_fsl_shocks/flooding and SPI
+
+```{r}
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi1", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi3", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi6", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi9", "hh_fsl_shocks/flooding")
+hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi12", "hh_fsl_shocks/flooding")
+```
+
+
+
+
+<!-- # `Livestock decrease Disease outbreak` = "reason_livestock_decrease/disease_outbreak", -->
+<!-- # `Livestock decrease Flooding` = "reason_livestock_decrease/flooding_flooding", -->
+<!-- # `Livestock decrease Drought` = "reason_livestock_decrease/drought_drought", -->
