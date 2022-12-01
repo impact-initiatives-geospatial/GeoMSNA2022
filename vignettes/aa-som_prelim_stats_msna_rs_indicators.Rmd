@@ -1,0 +1,119 @@
+---
+title: "aa-som_prelim_stat_msna_rs"
+output: rmarkdown::html_document
+vignette: >
+  %\VignetteIndexEntry{aa-som_prelim_stat_msna_rs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo=FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  warning = F, 
+  message = F
+)
+```
+
+
+```{r}
+#library(GeoMSNA2022)
+devtools::load_all()
+library(here)
+library(tidyverse)
+library(openxlsx)
+library(purrr)
+library(srvyr)
+library(illuminate)
+library(sf)
+library(jtools)
+options(scipen = 999)
+
+```
+
+```{r}
+## Calling dataset
+
+# data_set <- fetch_msna("som")
+df_msna_dataset <- read_csv("../data/som_clean_msna_with_rs_hex.csv") 
+
+```
+
+# SOM MSNA RS Preliminary Analysis FCS, rCSI {.tabset}
+
+## NDVI
+
+#### Food Consumption Score (FCS) and NDVI
+
+```{r}
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Mar2022", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Mar2022", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Mar2022", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Apr2022", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Apr2022", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Apr2022", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_May2022", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_May2022", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_May2022", "fcs")
+
+```
+
+#### Reduced Coping Strategy Index (RCSI) and NDVI
+
+```{r}
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Mar2022", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Mar2022", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Mar2022", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Apr2022", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Apr2022", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Apr2022", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_May2022", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_May2022", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_May2022", "rcsi")
+```
+
+## VCI
+
+#### Food Consumption Score (FCS) and VCI
+
+```{r}
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Mar2022", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Apr2022", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_May2022", "fcs")
+
+```
+
+#### Reduced Coping Strategy Index (RCSI) and VCI
+
+```{r, echo=FALSE}
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Mar2022", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Apr2022", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_May2022", "rcsi")
+
+```
+
+## SPI
+
+#### Food Consumption Score (FCS) and SPI
+
+```{r}
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi1", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi3", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi6", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi9", "fcs")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi12", "fcs")
+
+```
+
+#### Reduced Coping Strategy Index (RCSI) and SPI
+
+```{r}
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi1", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi3", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi6", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi9", "rcsi")
+hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi12", "rcsi")
+
+```
