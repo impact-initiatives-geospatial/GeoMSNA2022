@@ -1,10 +1,13 @@
 # rm(list = ls())
 
 library(tidyverse)
+library(ggpmisc)
 library(illuminate)
 library(ggpubr)
 library(srvyr)
 library(survey)
+library(oddsratio)
+
 options(scipen = 999)
 
 
@@ -15,8 +18,8 @@ cols_to_check <- c("fcs","fcs_category","household_hunger_scale","hungry_score",
 
 
 numeric_cols <- c("fcs","rs_VCI_Apr2022","household_hunger_scale","how_much_debt","rs_NDVI_Mar2022","rs_NDVI_Apr2022",
-                  "rs_NDVI_May2022","Distance","rs_avg_dist_perm_water_pix_20172020",
-                  "inc_employment_pension", "medical_exp")
+                  "rs_NDVI_May2022","Distance","rs_avg_dist_perm_water_pix_20172020","rs_healthcare_accessbility_walking_only2019",
+                  "inc_employment_pension", "medical_exp","rs_city_accessibility2015")
 
 
 
@@ -109,7 +112,10 @@ data <- data %>% mutate(
   ndvi_may_2022_log = log(rs_NDVI_May2022),
   ndvi_apr_2022_log = log(rs_NDVI_Apr2022),
   ndvi_mar_2022_log = log(rs_NDVI_Mar2022),
-  Distance_log = log(Distance)
+  Distance_log = log(Distance),
+  # Distance_log = Distance,
+  rs_healthcare_accessbility_walking_only2019_log = log(rs_healthcare_accessbility_walking_only2019),
+  rs_city_accessibility2015_log = log(rs_city_accessibility2015)
 )
 
 
@@ -193,7 +199,9 @@ medical_exp_distance_test <- illuminate::weighted_pearson_test(data = data,strat
 
 # data_ndvi <- data %>% filter(ndvi_may_2022_log > -3)
 
-fcs_ndvi_test <- illuminate::weighted_pearson_test(data = data,strata = "strata_and_pop_group",survey_weights = "survey_weight",
+fcs_ndvi_test <- illuminate::weighted_pearson_test(data = data,
+                                                   strata = "strata_and_pop_group",
+                                                   survey_weights = "survey_weight",
                                                    dep_var = "fcs",ind_var = c("ndvi_mar_2022_log",
                                                                                "ndvi_apr_2022_log","ndvi_may_2022_log"))
 
@@ -327,8 +335,99 @@ priority_needs_food_distance2 <- ggplot((data %>% filter(rs_avg_dist_perm_water_
 food_box_plots <- ggarrange(priority_needs_food_distance,priority_needs_food_distance2)
 
 
+################## distance to health and urban center 
+
+## scatter plot
+
+
+### distance + fcs
+accessibility_fcs <- ggplot(data, aes(x=rs_healthcare_accessbility_walking_only2019, y=fcs)) + 
+  geom_point()+
+  geom_smooth(method=lm,se=F)+
+  theme(panel.background = element_rect(fill = "white",
+                                        colour = "black",
+                                        size = 0.5, linetype = "solid"),
+        panel.grid.major = element_blank()) +
+  xlab("Oxford accessibility")
+
+accessibility_medical_exp <- ggplot(data, aes(x=rs_avg_dist_perm_water_pix_20172020, y= medical_exp)) + 
+  geom_point()+
+  geom_smooth(method=lm,se=T)+
+  theme(panel.background = element_rect(fill = "white",
+                                        colour = "black",
+                                        size = 0.5, linetype = "solid"),
+        panel.grid.major = element_blank()) +
+  xlab("Oxford accessibility")
+
+
+accessibility_scater_plot <- ggarrange(accessibility_fcs, accessibility_medical_exp)
+
+### oxford indicator distance to health
+
+data$rs_healthcare_accessibility2019 %>% log()%>% hist()
+
+# 
+# oxford_indicaor_test_helth_care_medical_exp <- weighted_pearson_test(data = data,dep_var = "rs_healthcare_accessbility_walking_only2019",
+#                                               ind_var = c("medical_exp"),
+#                                               strata = "strata_and_pop_group",
+#                                               survey_weights = "survey_weight")
+
+
+oxford_indicaor_test_health_care_accessibility <- weighted_pearson_test(data = data,dep_var = "rs_healthcare_accessbility_walking_only2019",
+                                                                        ind_var = c("medical_exp","fcs"),
+                                                                        strata = "strata_and_pop_group",
+                                                                        survey_weights = "survey_weight")
+
+########################################################################################################################################################
+######################################################## logistic regression ########################################################################### 
+
+data$need_priorities.healthcare <-    data$need_priorities.healthcare %>% as.integer()
+
+data_logistic <- data %>% dplyr::select(need_priorities.healthcare,Distance_log,Distance)
+
+# removeing outliers and inf/missing values
+outliers <- (boxplot.stats(data_logistic$Distance))$out
+outliers_log <- (boxplot.stats(data_logistic$Distance_log))$out
+
+data_logistic <- data_logistic %>% filter(!Distance_log %in% outliers_log)
+data_logistic <- data_logistic %>% filter(!Distance %in% outliers)
+
+
+data_logistic <- data_logistic %>% filter(!is.na(Distance_log)) %>% 
+  filter(!is.nan(Distance_log))  %>% filter(!is.infinite(Distance_log)) %>% filter()
+
+data_logistic <- data_logistic %>% filter(!is.na(need_priorities.healthcare)) %>% filter(!is.nan(need_priorities.healthcare))  %>% filter(!is.infinite(need_priorities.healthcare))
 
 
 
+###### Regression #####
+fit_glm <- glm(need_priorities.healthcare~Distance  , 
+               data = data_logistic, family = "binomial") 
+
+logistic_regression_summary <-summary(fit_glm)
+
+#### Calculate Odd ratio ########
+odd_ratio <- or_glm(data = data_logistic, model = fit_glm,incr = list(Distance=10))
+odd_ratio
 
 
+### calulate the probability
+data_logistic$probabilities <- fit_glm %>% predict(type = "response")
+
+
+####### Regression plot 
+
+regression_plot<-ggplot(data_logistic,aes(Distance_log, probabilities)) +
+  geom_point() +
+  geom_smooth(method='glm', method.args = list(family = "binomial"))+
+  # stat_poly_line() +
+  stat_poly_eq(aes(label = paste(after_stat(eq.label), sep = "*\", \"*"))) +
+  stat_poly_eq(label.y = 0.9) +
+  theme(panel.background = element_rect(fill = "white",
+                                        colour = "black",
+                                        size = 0.5, linetype = "solid"),
+        panel.grid.major = element_line(size =.02, colour = "#D5D5D5"))+
+  expand_limits(y=c(0:1))
+
+
+regression_plot
