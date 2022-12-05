@@ -1,0 +1,183 @@
+---
+title: "IRQ::MCNA-Remote Sensing Analysis"
+author: "Mehedi KHAN & Zack Arno"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+<style type="text/css">
+.main-container {
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(illuminate)
+devtools::load_all()
+
+data <- load_hh_data(country_code = "irq")
+# source(here::here("scripts/irq_globals.R"))
+
+```
+
+## Intro
+
+This is a document to start exploring options for logistic regression.
+
+## Predictor Distributions
+
+Based on previous analysis, distance to closest water body seems to have some predictive power. Let's first look at it's distribution on both normal & log scales. Histogram show's that the data better fits a log distribution.
+```{r}
+# quick histos
+data |> 
+  ggplot(aes(x= Distance))+
+  geom_histogram()
+
+data |> 
+  ggplot(aes(x= Distance))+
+  geom_histogram()+
+  scale_x_log10()
+```
+
+## Plot untransformed data
+
+Just playing with the data and plotting it untransformed to start. Results- not too interesting. Doesn't look like distance has any real discriminatory power. Additionally, we know distance is not normally distributed so we need to transform it
+```{r}
+
+data_lm1 <- data %>% 
+  mutate(
+    health_care=as.integer(need_priorities.healthcare)
+  ) |> 
+  filter(!is.na(Distance)) |> 
+  select(health_care,Distance_log,Distance) 
+
+
+# PLOT UNTRANSFORMED
+fit_hcn_dist <- glm(health_care~Distance  , 
+               data = data_lm1,
+               family = "binomial") 
+
+
+
+distances <- seq(min(data_lm1$Distance,na.rm=T),max(data_lm1$Distance,na.rm=T), 1) 
+
+
+predicted.need_hcn <- predict(fit_hcn_dist, 
+                            newdata = data.frame(Distance = distances),
+                            type = "response")
+
+
+
+hcn_plot <- ggplot(data_lm1, aes(x = Distance, y = health_care)) + 
+  geom_jitter(width = 0, height = 0.05, color = "red") +
+  labs(title = "Reported Health Care Need")
+
+pred_df <- data.frame(Distance = distances, 
+                              health_care = predicted.need_hcn)
+
+
+
+hcn_need_logistic_plot <- hcn_plot + 
+  geom_line(data =pred_df,
+            color = "red", size = 1)
+
+
+hcn_need_logistic_plot
+```
+
+## Log transformed
+
+Still nothing too interesting. We see a bit of a curve in the lower range suggesting that people very close to water bodies might be less likely to report health care needs. Hypothesis is still related to the fact that urban areas are based near water bodies.
+
+```{r}
+
+# fit health care need (hcn) ~ distance
+data_lm2 <- data_lm1 |> 
+  filter(Distance!=0)
+fit_hcn_log_dist <- glm(health_care~log(Distance)  , 
+               data = data_lm2,
+               family = "binomial") 
+summary(fit_hcn_log_dist)
+
+
+distances <- seq(min(data_lm2$Distance,na.rm=T),max(data_lm2$Distance,na.rm=T), 10) 
+
+
+predicted.need_hcn_logD <- predict(fit_hcn_log_dist, 
+                            newdata = data.frame(Distance = distances),
+                            type = "response")
+
+
+
+
+
+pred_df2 <- data.frame(Distance = distances, 
+                              health_care = predicted.need_hcn_logD)
+
+
+plot_hcn_logDist <- ggplot(data_lm2, aes(x = Distance, y = health_care)) + 
+  geom_jitter(width = 0, height = 0.05, color = "red") +
+  labs(title = "Reported Health Care Need")+
+  geom_line(data =pred_df2,
+            color = "red", size = 1)
+
+plot_hcn_logDist
+
+```
+
+
+## Data Filtered
+
+Since we saw that sharper curve in the lower values I thought it might be interesting to try just looking at the lower values. However, without the higher values included it looks like the curve disappears.
+
+```{r}
+data_low_distance<- data_lm1 |> 
+  filter(Distance<1000,Distance!=0)
+
+fit_hcn_low_dist <- glm(health_care~log(Distance)  , 
+               data = data_low_distance,
+               family = "binomial") 
+summary(fit_hcn_log_dist)
+
+
+sim_dist_low <- seq(min(data_low_distance$Distance,na.rm=T),max(data_low_distance$Distance,na.rm=T), 1) 
+
+
+predicted.need_hcn_logLowDist <- predict(fit_hcn_low_dist, 
+                            newdata = data.frame(Distance = sim_dist_low),
+                            type = "response")
+
+
+
+
+
+pred_low_distance <- data.frame(Distance = sim_dist_low, 
+                              health_care = predicted.need_hcn_logLowDist)
+
+pred_low_distance |> 
+  as_tibble() |> 
+  pull(Distance) |> max()
+
+
+plot_hcn_logLowDist <- ggplot(data_low_distance,
+                              aes(x = Distance, y = health_care)) + 
+  geom_jitter(width = 0, height = 0.05, color = "red") +
+  labs(title = "Reported Health Care Need")+
+  geom_line(data =pred_low_distance,
+            color = "red", size = 1)+
+  geom_vline(xintercept=1000)
+
+plot_hcn_logLowDist
+
+```
+
+
+
+
