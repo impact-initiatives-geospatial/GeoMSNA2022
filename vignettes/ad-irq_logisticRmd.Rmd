@@ -48,7 +48,7 @@ data |>
 
 ## Plot untransformed data
 
-Just playing with the data and plotting it untransformed to start. Results- not too interesting. Doesn't look like distance has any real discriminatory power. Additionally, we know distance is not normally distributed so we need to transform it
+Just playing with the data and plotting it untransformed to start. Results- not too interesting, doesn't look like distance has any real discriminatory power. Additionally, we know distance is not normally distributed so we need to transform it
 ```{r}
 
 data_lm1 <- data %>% 
