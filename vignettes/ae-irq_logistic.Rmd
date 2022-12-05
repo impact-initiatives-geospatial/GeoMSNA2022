@@ -22,9 +22,6 @@ library(tidyverse)
 library(illuminate)
 devtools::load_all()
 
-debugonce(input_dir)
-dir(input_dir(country_code = "irq"))
-
 data <- load_hh_data(country_code = "irq")
 # source(here::here("scripts/irq_globals.R"))
 
