@@ -222,13 +222,6 @@ hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Aug
 ```
 
 ### VCI
-#### hh_size and VCI
-
-```{r}
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Jun2022", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Jul2022", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Aug2022", "hh_size")
-```
 
 #### total_house_income and VCI
 
@@ -287,16 +280,6 @@ hex_plot_mean_rs_count_msna_ind(df_msna_dataset, "GRID_ID", "rs_VCI_Aug2022", "h
 ```
 
 ### SPI
-
-#### hh_size and SPI
-
-```{r}
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_Jun_spi1", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_Jun_spi3", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_Jun_spi6", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_Jun_spi9", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_Jun_spi12", "hh_size")
-```
 
 #### total_house_income and SPI
 
