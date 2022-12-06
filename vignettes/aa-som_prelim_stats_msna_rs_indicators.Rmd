@@ -123,19 +123,6 @@ hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_May_spi12", "rcsi
 
 ### NDVI
 
-#### hh_size and NDVI
-
-```{r}
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Mar2022", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Mar2022", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Mar2022", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_Apr2022", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_Apr2022", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_Apr2022", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_May2022", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_pct_median_May2022", "hh_size")
-hex_plot_mean_rs_mean_msna_ind(df_msna_dataset, "GRID_ID", "rs_NDVI_z_score_May2022", "hh_size")
-```
 #### total_house_income and NDVI
 
 ```{r}
