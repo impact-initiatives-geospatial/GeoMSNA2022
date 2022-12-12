@@ -22,24 +22,16 @@ library(xlsf)
 library(sf)
 library(leaflet)
 devtools::load_all()
-qs <-  readxl::read_excel(file.path(Sys.getenv("NGA_MSNA2022"),"nga_msna_2022_survey_choices.xlsx" ),sheet = "survey")
-choices <-  readxl::read_excel(file.path(Sys.getenv("NGA_MSNA2022"),"nga_msna_2022_survey_choices.xlsx" ),sheet = "choices")
 
+qs <-  readxl::read_excel(file.path(input_dir(country_code = "nga"),"nga_msna_2022_survey_choices.xlsx" ),sheet = "survey")
+choices <-  readxl::read_excel(
+  file.path(input_dir(country_code = "nga"),"nga_msna_2022_survey_choices.xlsx" ),
+  sheet = "choices")
 
 kobo<- xlsf::xlsf_load(survey = qs,choices = choices,label = "label::English",sm_sep ="/" )
 
-
 df <- load_hh_data(country_code = "nga")
 kobo_df<- xlsf::xlsf_load(survey = qs,choices = choices,label = "label::English",sm_sep ="/",data_main = df )
-
-
-df_sel <- df |>
-  load_core_hh_indicators("nga") 
-
-df_sel |> 
-  glimpse()
-
-
 
 df <- xlsf::xlsf_relevel(df = df,xlsf = kobo,skip = "ward_of_origin")
 
