@@ -265,10 +265,47 @@ DT::datatable(health_need_distance_t_test,caption = "Table: T test between healt
 
 **Result:**
 
-* There is a significant difference in the mean for those who reported yes to priority_needs.healthcare and those who reported “no”. 
+* There is a significant difference in the mean for those who reported yes to `priority_needs.healthcare` and those who reported “no”. 
 * This means in rural areas (as cities are close to waterbodies), there is a shortage of healthcare centres which results in increasing medical expense  
 
 
 
+#### Varifications for findings
+* 1. Since the findings illustrate that the relationship between FCS/medical costs and distance to the nearest water may be driven by rural-urban differences (urban centres closer to rivers), Hence a Pearson correlation test with the oxford accessibility indicator was performed, and the result aligns with the previous findings.  
 
+```{r echo=F , fig.width = 30,fig.height = 10}
+accessibility_scater_plot
+DT::datatable(oxford_indicaor_test_health_care_accessibility,caption = "Table: Pearson correlation test between accesibility indicator vs medical expense/fcs",
+              options = list(dom = 't'))
+
+```
+
+
+
+#### Logistic regression between
+
+
+<div style="text-align: center;">
+<span style="color: #EE5859;">**[DO NOT USE THIS TAB! UNDER DEVELOPMENT!!]**</span>
+</div>
+
+
+* 2. A logistic regression is performed between `priority_needs.healthcare` and `Distance (log)`. The **summary of logistic regression** is given below
+
+```{r echo=F , fig.width = 30,fig.height = 10, warning=F}
+
+
+logistic_regression_summary
+
+```
+
+**Regression plot**
+```{r echo=F , fig.width = 30,fig.height = 10,warning=F,cache.comments=FALSE,}
+regression_plot
+
+DT::datatable(odd_ratio,caption = "Table: odd ratio",
+              options = list(dom = 't'))
+
+
+```
 
