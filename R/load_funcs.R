@@ -1,3 +1,26 @@
+load_questionnaire <- function(env_var, 
+                               country_code,
+                               questionnaire_file= NULL,
+                               survey_name="survey",
+                               choices_name="choices"){
+  
+  if(is.null(questionnaire_file)){
+    if(country_code=="nga"){
+      questionnaire_file <- "nga_msna_2022_survey_choices.xlsx"
+    }
+  }
+  
+  qs <-  readxl::read_excel(file.path(
+    input_dir(country_code = country_code), questionnaire_file),
+    sheet = survey_name)
+  choices <-  readxl::read_excel(
+    file.path(input_dir(country_code = country_code),questionnaire_file ),
+    sheet = choices_name)
+  questionnaire <- xlsf::xlsf_load(survey = qs,choices = choices,label = "label::English",sm_sep ="/" )
+  return(questionnaire)
+}
+
+
 #' input_dir
 #'
 #' @param env_var 
@@ -10,7 +33,7 @@
 
 input_dir <-  function(env_var= "MSNA2022_DIR" ,country_code){
   # if(country_code=="col"){
-    res_fp <- file.path(Sys.getenv(env_var),country_code,"inputs")
+  res_fp <- file.path(Sys.getenv(env_var),country_code,"inputs")
   # }
   return(res_fp)
   

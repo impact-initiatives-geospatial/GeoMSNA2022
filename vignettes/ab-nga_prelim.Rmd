@@ -32,7 +32,7 @@ kobo<- xlsf::xlsf_load(survey = qs,choices = choices,label = "label::English",sm
 
 df <- load_hh_data(country_code = "nga")
 kobo_df<- xlsf::xlsf_load(survey = qs,choices = choices,label = "label::English",sm_sep ="/",data_main = df )
-
+ 
 df <- xlsf::xlsf_relevel(df = df,xlsf = kobo,skip = "ward_of_origin")
 
 ```
