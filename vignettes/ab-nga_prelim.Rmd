@@ -23,16 +23,9 @@ library(sf)
 library(leaflet)
 devtools::load_all()
 
-qs <-  readxl::read_excel(file.path(input_dir(country_code = "nga"),"nga_msna_2022_survey_choices.xlsx" ),sheet = "survey")
-choices <-  readxl::read_excel(
-  file.path(input_dir(country_code = "nga"),"nga_msna_2022_survey_choices.xlsx" ),
-  sheet = "choices")
-
-kobo<- xlsf::xlsf_load(survey = qs,choices = choices,label = "label::English",sm_sep ="/" )
 
 df <- load_hh_data(country_code = "nga")
-kobo_df<- xlsf::xlsf_load(survey = qs,choices = choices,label = "label::English",sm_sep ="/",data_main = df )
- 
+kobo <- load_questionnaire(country_code = "nga") 
 df <- xlsf::xlsf_relevel(df = df,xlsf = kobo,skip = "ward_of_origin")
 
 ```
@@ -81,7 +74,7 @@ df |>
 Land cover broken down by income group is interesting. We see that big spike in the "Sokoto millet, cowpeas, grondnuts, and livestock" landcover class in the highest income group.
 
 ```{r}
-
+chart_pal_auto <- RColorBrewer::brewer.pal(n = 6,name = "Accent")
 df <- df |> 
   mutate(
     overall_income_estimate=xlsf:::label_xml(xlsf = kobo_df,q_name = "overall_income_estimate")
@@ -181,7 +174,7 @@ landuse_chart_pal <- c(central_sorghum= "#1c561cff",
 
 
 RColorBrewer::display.brewer.all()
-chart_pal_auto <- RColorBrewer::brewer.pal(n = 6,name = "Accent")
+
 df |> 
   filter(gender_hoh=="male" & `hh_situation/catte_rearing`) |> 
   # count(gender_hoh)
@@ -227,9 +220,67 @@ df |>
 ```
 
 
-are people in livestock zones more likely to have livestock?
+Are people in livestock zones more likely to have livestock - should be?
+
+Table below shows something 
+```{r}
+library(srvyr)
+dfsvy_overall <-  as_survey(.data = df,weights= weight_both)
+
+have_livestock_vs_lhz_tbl <- dfsvy_overall |> 
+  filter(!is.na(longitude),!is.na(rs_nga.lznameend)) |> 
+  group_by(rs_nga.lznameend,i.have_cattle=`hh_situation/catte_rearing`) |> 
+  summarise(
+    pct_weighted= survey_mean(vartype = "ci"),
+    # pct_unweighted=mean(unweighted(i.have_cattle),na.rm=T),
+    n = unweighted(n())
+  ) |> 
+  filter(i.have_cattle) |> 
+  arrange(desc(pct_weighted))
+
+
+have_livestock_vs_lhz_tbl |> 
+  mutate(
+    lhz= str_replace_all(rs_nga.lznameend,":","\n"),
+    lhz= str_replace_all(lhz,",",",\n"),
+    lhz= str_replace_all(lhz,"-Kano",",\n")
+         
+         ) |> 
+  ggplot(aes(x= reorder(lhz,pct_weighted),
+             y=pct_weighted
+  ))+
+  geom_bar(stat="identity",position= "dodge")+
+  scale_y_continuous(labels = scales::percent)+
+  labs(x="Livelihood Zone")+
+  ggtitle("% HHs with livestock by livelihood zone",
+          subtitle = "can MSNA data be used to inform LHZ data?")+
+  coord_flip()+
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank()
+  )
+
+ 
+ DT::datatable(have_livestock_vs_lhz_tbl)
+```
+
+
 ```{r}
 
+dfsvy_overall |> 
+  filter(!is.na(longitude),!is.na(rs_nga.lznameend)) |> 
+  group_by(rs_nga.lznameend) |> 
+  summarise(
+    # pct_weighted= survey_mean(),
+    n_weighted = survey_count(`hh_situation/catte_rearing`)
+  ) |>
+  # filter(i.have_cattle) |> 
+  arrange(desc(pct_weighted))
+
+# |> 
+  mutate(pct= count/sum(count)) |> 
+  filter(i.have_cattle) |> 
+  arrange(desc(pct))
 # so people in livestock zones do not look much more likely to have livestock do they?
 df |> 
   filter(!is.na(longitude)) |> 
