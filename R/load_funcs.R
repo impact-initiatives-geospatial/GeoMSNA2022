@@ -1,3 +1,15 @@
+#' load_questionnaire
+#'
+#' @param env_var 
+#' @param country_code 
+#' @param questionnaire_file 
+#' @param survey_name 
+#' @param choices_name 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 load_questionnaire <- function(env_var, 
                                country_code,
                                questionnaire_file= NULL,
