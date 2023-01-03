@@ -1,0 +1,73 @@
+---
+title: "Remote Sensing & Survey Analytics"
+subtitle: "Multi-Country Review"
+author: "Zack Arno"
+date: '2023-01-03'
+output:
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    number_sections: FALSE
+    theme:
+      bg: "#D1D3D4"
+      fg: "#58585A"
+      primary: "#EE5859"
+      base_font:
+        google: "Roboto"
+      code_font:
+        google: "JetBrains Mono"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+thematic::thematic_on()
+```
+
+## Intro
+
+In 2022 alongside typical MSNA analysis an exercise was done to investigate integrating remote sensing into the more classical survey analyses. A series of relevant RS indicators were chosen and the adapted for 6 specific contexts where MSNAs were being carried out. These six (7? car?) contexts were Niger, Somalia, Mali, Haiti,Colombia, Niger, Iraq, & Central African republic. Using Google Earth Engine (GEE) the remote sensing indicators chosen were pulled directly into the household level data sets and provided back to the field teams for inclusion in there analytic framework and contextualization.
+
+Along with the initial effort of extracting and sharing the RS data, this document and repository holds additional collaborative analysis which was possible for three (4?) specific contexts: Somalia, Colombia, and Nigeria, Iraq. These contexts were chosen organically based on capacity and interest of in-country teams. Perhaps overtime additional teams will be able to make use of and contribute to the examples explored here.
+
+## Overview
+
+Below we show an overview map of the assessment activities carried out in Somalia, Nigeria,Iraq, and Colombia.
+Not going to give an overview of each countries climate yet
+
+```{r overviewmap}
+summary(cars)
+```
+
+
+Maybe one rainfall plot (line per country)
+```{r}
+
+```
+
+Maybe a ridge plot of elevation
+```{r}
+
+```
+
+Land cover map where available?
+```{r}
+
+```
+
+## Findings
+
+
+## Methodology
+
+RS indicators were made an extracted using GEE. This work is contained in the `{surveyGEER}` repository. Generally the indicators were extracted at the pixel level. Temporal RS data sources with longer timelines were typically preferred over those with shorter time lines so that pixel-values could be normalized to standard scores and indices such as percent mean/median could be constructed.
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

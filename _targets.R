@@ -26,13 +26,27 @@ lapply(list.files("R", full.names = TRUE, recursive = TRUE), source)
 
 # Replace the target list below with your own:
 list(
+
+  # Track Key files ---------------------------------------------------------
+  # anything that might change
   tar_target(
     name = data,
     command = tibble(x = rnorm(100), y = rnorm(100))
 #   format = "feather" # efficient storage of large data frames # nolint
   ),
+
+  # Load HH data with questionnaires & Relevel ------------------------------
   tar_target(
-    name = model,
-    command = coefficients(lm(y ~ x, data = data))
-  )
+    name = dats,
+    command = c("nga","col","som") |>
+      purrr::map(
+        ~load_and_relevel(.x)  
+      )
+  ),
+ # produce overiew map?
+ tar_target(
+   name= overview_map,
+   commonad= multicountry_overview_map(dat)
+ ),
+
 )
