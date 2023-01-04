@@ -34,11 +34,9 @@ options(scipen = 999)
 ```
 
 ```{r}
-## Calling dataset
-
-# data_set <- fetch_msna("som")
-df_msna_dataset <- read_csv("../data/som_clean_msna_with_rs_hex.csv") 
-
+df_msna_dataset <-  read_csv(file.path(
+  Sys.getenv("MSNA2022_DIR"),"som","inputs","som_clean_msna_with_rs_hex.csv")
+  )
 ```
 # SOM MSNA and RS {.tabset}
 
