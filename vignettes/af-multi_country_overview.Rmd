@@ -25,7 +25,7 @@ thematic::thematic_on()
 
 ## Intro
 
-In 2022 alongside typical MSNA analysis an exercise was done to investigate integrating remote sensing into the more classical survey analyses. A series of relevant RS indicators were chosen and the adapted for 6 specific contexts where MSNAs were being carried out. These six (7? car?) contexts were Niger, Somalia, Mali, Haiti,Colombia, Niger, Iraq, & Central African republic. Using Google Earth Engine (GEE) the remote sensing indicators chosen were pulled directly into the household level data sets and provided back to the field teams for inclusion in there analytic framework and contextualization.
+In 2022 alongside typical MSNA analysis an exercise was done to investigate integrating remote sensing into the more classical survey analyses. A series of relevant RS indicators were chosen and the adapted for 6 specific contexts where MSNAs were being carried out. These six (7? car?) contexts were Niger, Somalia, Mali, Haiti,Colombia, Niger, Iraq, & Central African republic. Using Google Earth Engine (GEE) the remote sensing indicators chosen were pulled directly into the household level data sets and provided back to the field teams for expert contextualization and alignment to countries analytic framework.
 
 Along with the initial effort of extracting and sharing the RS data, this document and repository holds additional collaborative analysis which was possible for three (4?) specific contexts: Somalia, Colombia, and Nigeria, Iraq. These contexts were chosen organically based on capacity and interest of in-country teams. Perhaps overtime additional teams will be able to make use of and contribute to the examples explored here.
 
