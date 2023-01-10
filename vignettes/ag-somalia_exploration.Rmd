@@ -1,0 +1,105 @@
+---
+title: "ag-somalia_exploration"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ag-somalia_exploration}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(GeoMSNA2022)
+library(tidyverse)
+library(here)
+library(xlsf)
+devtools::load_all()
+```
+
+
+## Cattle Die off
+- by climate and land cover
+```{r}
+dat <- read_csv(file.path(input_dir(country_code = "som"),"som_clean_msna_with_rs_hex.csv"))
+survey_questions <- readxl::read_xlsx(file.path(input_dir(country_code = "som"),"SOM_REACH_MSNA_2022_Tool.xlsx"),"survey") 
+survey_choices <- readxl::read_xlsx(file.path(input_dir(country_code = "som"),"SOM_REACH_MSNA_2022_Tool.xlsx"),"choices") 
+dat <- xlsf_load(survey = survey_questions,choices = survey_choices,data_main = dat,label ="label::English",sm_sep = "/" )
+```
+
+```{r}
+xlsf_query(xlsf = dat,pattern = "livestock")
+xlsf_query(xlsf = dat,pattern = "idp")
+xlsf_query(xlsf = dat,pattern = "income")
+```
+
+```{r}
+
+dat$data_main |> count(freq_hh_livestock)
+dat$data_main |> 
+  select(starts_with("reason_livestock_decrease/")) |> 
+  colnames() |> purrr::map_dfr(
+    ~dat$data_main |> 
+      group_by(
+       !!sym(.x) 
+      ) |> 
+  summarise(
+    n=n()
+  ) |>
+    pivot_longer(1) |> 
+    filter(!is.na(value)) |> 
+    mutate(
+      pct=n/sum(n)
+    ) |> filter(value=="yes")
+  ) |> 
+  arrange(desc(n)) |> 
+  slice(1:3)
+
+
+```
+
+```{r}
+
+dat$data_main |> 
+  ggplot(aes(x=freq_hh_livestock ,y= rs_healthcare_accessbility_walking_only2019))+
+  geom_boxplot()+
+  scale_y_log10()
+
+dat$data_main |> 
+  ggplot(aes(x=freq_hh_livestock ,y= rs_avg_dist_perm_water_pix_20172020))+
+  geom_boxplot()+
+  scale_y_log10()
+
+dat$data_main |> 
+  ggplot(aes(x=`reason_livestock_decrease/sale_slaughter` ,y= rs_avg_dist_perm_water_pix_20172020))+
+  geom_boxplot()+
+  scale_y_log10()
+dat$data_main |> 
+  ggplot(aes(x=`reason_livestock_decrease/disease_outbreak` ,y= rs_avg_dist_perm_water_pix_20172020))+
+  geom_boxplot()+
+  scale_y_log10()
+
+dat$data_main |> 
+  group_by(hh_income_changed ) |> 
+  summarise(
+    n=n()
+  ) |> 
+  ggplot(aes(x=`hh_income_changed` ,y= n))+
+  geom_bar(stat="identity")
+```
+
+
+having a challenge as LHZ does not seem to be in the data we are pulling
+```{r}
+dat$data_main |> select(1:30) |> glimpse()
+dat$data_main$rs_som.lznameend  
+dat$data_main$`rs_som/lzcode`
+
+```
+
+
