@@ -63,6 +63,8 @@ dat$data_main |>
 
 ```
 
+No obvious signals in data.
+
 ```{r}
 
 dat$data_main |> 
@@ -83,6 +85,11 @@ dat$data_main |>
   ggplot(aes(x=`reason_livestock_decrease/disease_outbreak` ,y= rs_avg_dist_perm_water_pix_20172020))+
   geom_boxplot()+
   scale_y_log10()
+
+dat$data_main |> 
+  ggplot(aes(x=rs_som.lznameend,y= fcs))+
+  geom_boxplot()+
+  scale_y_log10()+ coord_flip()
 
 dat$data_main |> 
   group_by(hh_income_changed ) |> 
