@@ -21,13 +21,20 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 thematic::thematic_on()
+library(tidyverse)
+library(srvyr)
+library(here)
+list.files("R",full.names = T) |> purrr::map(~source(.x))
+targets::tar_load(nga_svy)
+# tar_render(report_trigger_overview,"pipeline/drc_cholera_trigger_overview_report.Rmd"),
 ```
 
 ## Intro
 
-In 2022 alongside typical MSNA analysis an exercise was done to investigate integrating remote sensing into the more classical survey analyses. A series of relevant RS indicators were chosen and the adapted for 6 specific contexts where MSNAs were being carried out. These six (7? car?) contexts were Niger, Somalia, Mali, Haiti,Colombia, Niger, Iraq, & Central African republic. Using Google Earth Engine (GEE) the remote sensing indicators chosen were pulled directly into the household level data sets and provided back to the field teams for expert contextualization and alignment to countries analytic framework.
+In 2022 alongside typical MSNA analysis an exercise was done to investigate integrating remote sensing into the more classical survey analyses. A series of relevant RS indicators were chosen and the adapted for 6 specific contexts where MSNAs were being carried out. These six contexts were Niger, Somalia, Mali, Haiti,Colombia, Niger, Iraq. Using Google Earth Engine (GEE) the remote sensing indicators chosen were pulled directly into the household level data sets and provided back to the field teams for expert contextualization and alignment to countries analytic framework.
 
-Along with the initial effort of extracting and sharing the RS data, this document and repository holds additional collaborative analysis which was possible for three (4?) specific contexts: Somalia, Colombia, and Nigeria, Iraq. These contexts were chosen organically based on capacity and interest of in-country teams. Perhaps overtime additional teams will be able to make use of and contribute to the examples explored here.
+Along with the initial effort of extracting and sharing the RS data and the independent work of the country teams, this document and repository holds additional collaborative analyses for Somalia, Colombia, and Nigeria, Iraq. The countries selected for this document were chosen based on feedback and support received from the field.
+
 
 ## Overview
 
@@ -39,10 +46,149 @@ summary(cars)
 ```
 
 
-Maybe one rainfall plot (line per country)
+## Nigeria
+
+Pretty clear in NGA that gender_hoh is a big driver of income with male headed households dominating the higher income brackets and female the lower income brackets. Therefore any environmental analysis would have to take this into account.
 ```{r}
 
+nga_svy$data_main |> 
+  mutate(
+        overall_income_estimate=xlsf:::label_vec_from_xml(xlsf = nga_svy,q_name = "overall_income_estimate")
+  ) |> 
+   group_by(gender_hoh,overall_income_estimate) |> 
+  summarise(
+    survey_mean(vartype = "ci")
+  ) |> 
+  ggplot(aes(x= overall_income_estimate, y=coef,color=gender_hoh))+
+  geom_errorbar(aes(ymin=`_low`, ymax=`_upp`))+
+  geom_point()+
+  coord_flip()+ 
+  theme_bw()
+
+svy_collapse(df = nga_svy$data_main,x_vec = "overall_income_estimate",disag = "gender_hoh",sm_sep = "/")
+
+nga_svy$data_main |> 
+  # filter(!is.na(longitude)) |> 
+  # filter(!is.na(rs_nga.lznameend)) |> 
+  filter(gender_hoh=="female") |> 
+  # group_by(overall_income_estimate,i.have_cattle=`hh_situation/catte_rearing`) |> 
+  group_by(i.have_cattle=`hh_situation/catte_rearing`,overall_income_estimate) |> 
+  summarise(
+    pct_mean = survey_mean()
+  ) |> 
+  # mutate(pct= count/sum(count)) |> 
+  # filter(overall_income_estimate=="more_than") |> pull(pct) |> sum()\
+  ggplot(aes(x= overall_income_estimate,
+             y=pct_mean,
+             fill = i.have_cattle))+
+  geom_bar(stat="identity",position= "dodge")+
+  coord_flip()+
+  theme_bw()
 ```
+
+
+It looks like increased rainfall intensityis associated with increased MSNI needs, but there is weird spatial element.
+```{r}
+
+nga_svy$data_main |> 
+  group_by(msni = as_factor(msni)) |> 
+  summarise(
+    pct_weighted= survey_mean(rs_rx5d_90d_may, vartype = "ci",na.rm=T),
+    n = unweighted(n())
+  ) |> 
+    ggplot(aes(x= msni,
+             y=pct_weighted
+  ))+
+  geom_point(stat="identity")+
+  geom_line(group=1)+
+    geom_errorbar(
+    aes(ymin = `pct_weighted_low`,
+        ymax = `pct_weighted_upp`), 
+                width = 0.2)+
+  geom_text(aes(label=n,x=msni ,y=20, fill=NULL)) +
+  ggtitle(label = "NGA MSNA 2022: average max 5 day rainfall intensity by MSNI",
+         subtitle = "Higher rainfall intensity is associated with higher MSNI needs")+
+  labs(x="MSNI",
+       y= "Average max 5 day rainfall intensity for May (mm)")+
+  theme_bw()
+
+
+```
+
+SHOCKS
+
+```{r}
+nga_svy$data_main |> 
+  mutate(
+    overall_income_estimate= xlsf:::label_vec_from_xml(xlsf= nga_svy,q_name = "overall_income_estimate")
+  ) |> 
+  filter(shock_impact_ability%in% c("yes","no")) |> 
+  group_by(overall_income_estimate,shock_impact_ability) |> 
+  summarise(
+    pct_weighted= survey_mean( vartype = "ci",na.rm=T),
+    n = unweighted(n())
+  ) |> 
+  filter(shock_impact_ability=="yes") |> 
+  ggplot(aes(x=overall_income_estimate,
+             y= pct_weighted))+
+  geom_point(color="black")+
+  geom_errorbar(
+    aes(ymin = `pct_weighted_low`,
+        ymax = `pct_weighted_upp`), 
+                width = 0.2)+
+  
+  scale_y_continuous(
+    labels = scales::percent
+    )+
+  labs(x="Estimated Income (last 30 days)",
+       title = "HHs who reported shock: Did the impact of shocks cause hunger in your household?",
+       subtitle = "Northern Nigeria MSNA 2022",
+       caption = "Approximately 12 % of HHs reported a difficulties/shocks over the last 6 months, but HHs in higher income groups have increased resiliency\nand ability to absorb shocks and were less affected"
+       )+
+  coord_flip()+
+  theme_bw()+
+  theme(
+      plot.caption = element_text(hjust = 0),
+      axis.title.x = element_blank() 
+  )
+```
+
+generally true for both male and female hoh
+```{r}
+nga_svy$data_main |> 
+  mutate(
+    overall_income_estimate= xlsf:::label_vec_from_xml(xlsf= nga_svy,q_name = "overall_income_estimate")
+  ) |> 
+  filter(shock_impact_ability%in% c("yes","no")) |> 
+  group_by(overall_income_estimate,gender_hoh,shock_impact_ability) |> 
+  summarise(
+    pct_weighted= survey_mean( vartype = "ci",na.rm=T),
+    n = unweighted(n())
+  ) |> 
+  filter(shock_impact_ability=="yes") |> 
+  ggplot(aes(x=overall_income_estimate,
+             y= pct_weighted))+
+  geom_point(aes(color=gender_hoh))+
+  geom_line(aes(color=gender_hoh, group=gender_hoh))+
+  scale_y_continuous(
+    labels = scales::percent
+    )+
+  labs(x="Estimated Income (last 30 days)",
+       title = "HHs who reported shock: Did the impact of shocks cause hunger in your household?",
+       subtitle = "Northern Nigeria MSNA 2022",
+       caption = "Approximately 12 % of HHs reported a difficulties/shocks over the last 6 months, but HHs in higher income groups have increased resiliency\nand ability to absorb shocks and were less affected"
+       )+
+  coord_flip()+
+  theme_bw()+
+  theme(
+      plot.caption = element_text(hjust = 0),
+      axis.title.x = element_blank() 
+  )
+
+```
+
+
+
 
 Maybe a ridge plot of elevation
 ```{r}

@@ -96,3 +96,24 @@ load_hh_data <-  function(env_var= "MSNA2022_DIR" ,country_code){
   return(res)
   
 }
+
+
+load_relevel_svy <- function(data,
+                         tool_path,
+                         survey_name="survey",
+                         choices_name="choices",
+                         fct_relevel_skip= NULL,
+                         weights_col
+                         ){
+    
+    qs <-  readxl::read_excel(tool_path,
+      sheet = survey_name)
+    choices <-  readxl::read_excel(tool_path,
+      sheet = choices_name)
+    
+    questionnaire <- xlsf::xlsf_load(survey = qs,choices = choices,label = "label::English",sm_sep ="/" ,data_main = data)
+    questionnaire$data_main <- xlsf::xlsf_relevel(df = questionnaire$data_main,xlsf = questionnaire,skip = fct_relevel_skip)
+    questionnaire$data_main <-  srvyr::as_survey(questionnaire$data_main,weights=weights_col)
+    return(questionnaire)
+  }
+

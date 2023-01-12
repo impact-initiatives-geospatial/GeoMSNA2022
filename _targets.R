@@ -5,8 +5,8 @@
 
 # Load packages required to define the pipeline:
 library(targets)
-# library(tarchetypes) # Load other packages as needed. # nolint
-
+library(tarchetypes) # Load other packages as needed. # nolint
+library(tidyverse)
 # Set target options:
 tar_option_set(
   packages = c("tibble"), # packages that your targets need to run
@@ -30,23 +30,45 @@ list(
   # Track Key files ---------------------------------------------------------
   # anything that might change
   tar_target(
-    name = data,
-    command = tibble(x = rnorm(100), y = rnorm(100))
+    name = nga_msna_filepath,
+    command = file.path(input_dir(env_var = "MSNA2022_DIR",country_code = "nga"), "20221107_msna_with_rs_nga.rds"),
+    format = "file"
 #   format = "feather" # efficient storage of large data frames # nolint
   ),
-
-  # Load HH data with questionnaires & Relevel ------------------------------
   tar_target(
-    name = dats,
-    command = c("nga","col","som") |>
-      purrr::map(
-        ~load_and_relevel(.x)  
-      )
+    name = nga_tool_filepath,
+    command = file.path(input_dir(env_var = "MSNA2022_DIR",country_code = "nga"), "nga_msna_2022_survey_choices.xlsx"),
+    format = "file"
+#   format = "feather" # efficient storage of large data frames # nolint
   ),
- # produce overiew map?
- tar_target(
-   name= overview_map,
-   commonad= multicountry_overview_map(dat)
- ),
+tar_target(nga_msna_data,
+           command= read_rds(nga_msna_filepath)
+           ),
+tar_target(
+  name=nga_svy,
+  command= load_relevel_svy(data = nga_msna_data,
+                            tool_path = nga_tool_filepath,
+                            survey_name = "survey",
+                            choices_name = "choices",
+                            fct_relevel_skip = "ward_of_origin",
+                            weights_col ="weight_both"
+                            )
+  ),
+  tar_render(multi_country_overview_report,"vignettes/af-multi_country_overview.Rmd")
+
+# 
+#   # Load HH data with questionnaires & Relevel ------------------------------
+#   tar_target(
+#     name = dats,
+#     command = c("nga","col","som") |>
+#       purrr::map(
+#         ~load_and_relevel(.x)  
+#       )
+#   ),
+#  # produce overiew map?
+#  tar_target(
+#    name= overview_map,
+#    commonad= multicountry_overview_map(dat)
+#  ),
 
 )
