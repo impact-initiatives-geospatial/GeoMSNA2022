@@ -167,7 +167,7 @@ nga_svy$data_main  |>
 
 and then a focal window size of 10 pixels (2.5 km). This exercise seems quite insightful as the expected trend of higher income associated with healthier vegetation compared to normal. You can see that when the focal window was increased the anomaly values become less negative. This could very likely be do to the larger window minimizing the effect of urbanized pixels. 
 
-Now we must ask ourselves why are do the aomalies appear to be generally negative?
+Now we must ask ourselves why are do the anomalies appear to be generally negative?
 
 - is it because it is a drier than normal year over the entire study area?
 - or is it potentially because of this urban affect on the anomalies. The increase in signature associated with increasing the window size suggests this is a possibility. It is quite likely that the ESA urban mask does not capture the full extent of the urban area in these rural towns. In additional to playing with the windows size a urban mask dilation procedure prior to masking should be explored - I hypothesize that the anomalies will shift more to more positive values and this relationship will also strengthen
