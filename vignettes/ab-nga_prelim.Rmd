@@ -23,16 +23,9 @@ library(sf)
 library(leaflet)
 devtools::load_all()
 
-qs <-  readxl::read_excel(file.path(input_dir(country_code = "nga"),"nga_msna_2022_survey_choices.xlsx" ),sheet = "survey")
-choices <-  readxl::read_excel(
-  file.path(input_dir(country_code = "nga"),"nga_msna_2022_survey_choices.xlsx" ),
-  sheet = "choices")
-
-kobo<- xlsf::xlsf_load(survey = qs,choices = choices,label = "label::English",sm_sep ="/" )
 
 df <- load_hh_data(country_code = "nga")
-kobo_df<- xlsf::xlsf_load(survey = qs,choices = choices,label = "label::English",sm_sep ="/",data_main = df )
-
+kobo <- load_questionnaire(country_code = "nga") 
 df <- xlsf::xlsf_relevel(df = df,xlsf = kobo,skip = "ward_of_origin")
 
 ```
@@ -81,7 +74,7 @@ df |>
 Land cover broken down by income group is interesting. We see that big spike in the "Sokoto millet, cowpeas, grondnuts, and livestock" landcover class in the highest income group.
 
 ```{r}
-
+chart_pal_auto <- RColorBrewer::brewer.pal(n = 6,name = "Accent")
 df <- df |> 
   mutate(
     overall_income_estimate=xlsf:::label_xml(xlsf = kobo_df,q_name = "overall_income_estimate")
@@ -181,7 +174,7 @@ landuse_chart_pal <- c(central_sorghum= "#1c561cff",
 
 
 RColorBrewer::display.brewer.all()
-chart_pal_auto <- RColorBrewer::brewer.pal(n = 6,name = "Accent")
+
 df |> 
   filter(gender_hoh=="male" & `hh_situation/catte_rearing`) |> 
   # count(gender_hoh)
@@ -227,9 +220,110 @@ df |>
 ```
 
 
-are people in livestock zones more likely to have livestock?
+Are people in livestock zones more likely to have livestock - should be?
+
+Graph and table below that HHs reporting owning livelihood are significantly more likely to be a zone labelled livelihood. However, a fairly close second is Kano-Katsina Sudanian zone which does not have livelihood in the  label. 
+```{r}
+library(srvyr)
+dfsvy_overall <-  as_survey(.data = df,weights= weight_both)
+
+have_livestock_vs_lhz_tbl <- dfsvy_overall |> 
+  filter(!is.na(longitude),!is.na(rs_nga.lznameend)) |> 
+  group_by(rs_nga.lznameend,i.have_cattle=`hh_situation/catte_rearing`) |> 
+  summarise(
+    pct_weighted= survey_mean(vartype = "ci"),
+    # pct_unweighted=mean(unweighted(i.have_cattle),na.rm=T),
+    n = unweighted(n())
+  ) |> 
+  filter(i.have_cattle) |> 
+  arrange(desc(pct_weighted))
+
+
+have_livestock_vs_lhz_tbl |> 
+  mutate(
+    lhz= str_replace_all(rs_nga.lznameend,":","\n"),
+    lhz= str_replace_all(lhz,",",",\n"),
+    lhz= str_replace_all(lhz,"-Kano",",\n")
+         ) |> 
+  ggplot(aes(x= reorder(lhz,pct_weighted),
+             y=pct_weighted
+  ))+
+  geom_bar(stat="identity",position= "dodge")+
+      geom_errorbar(
+    aes(ymin = `pct_weighted_low`,
+        ymax = `pct_weighted_upp`), 
+                width = 0.2)+
+  scale_y_continuous(labels = scales::percent)+
+  labs(x="FEWSNET LHZ")+
+  ggtitle("NGA MSNA 2022: % HHs with livestock by FEWSNET livelihood zone",
+          subtitle = "can MSNA data be used to inform LHZ data?")+
+    geom_text(
+            aes(label = n, x = lhz, y = 0.40, fill = NULL)) + 
+  coord_flip()+
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank()
+  )
+
+ 
+DT::datatable(have_livestock_vs_lhz_tbl)
+```
+
+What if we regroup ? thats good, at least are results are in agreement :-)
+
+```{r}
+dfsvy_overall |> 
+  filter(!is.na(longitude),!is.na(rs_nga.lznameend)) |> 
+  mutate(
+    lhz_livestock=case_when(
+    str_detect(rs_nga.lznameend,"livestock")~"Livestock listed",
+    TRUE~ "No livestock listed"
+  )) |> 
+  group_by(lhz_livestock,i.have_cattle=`hh_situation/catte_rearing`) |> 
+  summarise(
+    pct_weighted= survey_mean(vartype = "ci"),
+    n = unweighted(n())
+  ) |> 
+  filter(i.have_cattle) |> 
+  arrange(desc(pct_weighted)) |> 
+   ggplot(aes(x= reorder(lhz_livestock,
+                         pct_weighted),
+             y=pct_weighted
+  ))+
+  geom_bar(stat="identity",position= "dodge")+
+    geom_errorbar(
+    aes(ymin = `pct_weighted_low`,
+        ymax = `pct_weighted_upp`), 
+                width = 0.2)+
+  scale_y_continuous(labels = scales::percent)+
+  labs(x="FEWSNET LHZ")+
+  ggtitle("NGA MSNA 2022: % HHs who reported owning livestock by FEWSNET livelihood zone",
+          subtitle = "MSNA results align with FEWSNET classification")+
+  coord_flip()+
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank()
+  )
+```
+
+
+
 ```{r}
 
+dfsvy_overall |> 
+  filter(!is.na(longitude),!is.na(rs_nga.lznameend)) |> 
+  group_by(rs_nga.lznameend) |> 
+  summarise(
+    # pct_weighted= survey_mean(),
+    n_weighted = survey_count(`hh_situation/catte_rearing`)
+  ) |>
+  # filter(i.have_cattle) |> 
+  arrange(desc(pct_weighted))
+
+# |> 
+  mutate(pct= count/sum(count)) |> 
+  filter(i.have_cattle) |> 
+  arrange(desc(pct))
 # so people in livestock zones do not look much more likely to have livestock do they?
 df |> 
   filter(!is.na(longitude)) |> 
@@ -340,7 +434,92 @@ rs_ndvi_z_growing_season_21
 # Shocks
 ```{r}
 
+df_w_indic <- df |> 
+  mutate(
+    rs_rx5d_90d_may_cat = if_else(rs_rx5d_90d_may>16,"red","blue")
+  ) 
+
+df_w_indic|> 
+  ggplot(aes(x= rs_rx5d_90d_may, fill=rs_rx5d_90d_may_cat))+
+  geom_histogram()+
+  geom_vline(xintercept=16, color = "red")
+
+  
+dfsf <-  st_as_sf(df_w_indic |> filter(!is.na(longitude)), coords= c("longitude","latitude"), crs= 4326)
+
+library(leaflet)
+leaflet() |> 
+  addProviderTiles(providers$CartoDB.DarkMatter) |> 
+  addCircles(data= dfsf,
+             color = ~rs_rx5d_90d_may_cat,
+             label = dfsf$rs_rx5d_90d_may)
+
+```
+
+
+Does this relate to flood indicators?
+```{r}
+df |> 
+  select(matches("flood")) |> 
+  colnames()
+
+df <- df |> 
+  rowwise() |> 
+  mutate(
+    i.any_flood= if_else(sum(c_across(cols = matches("flood")),na.rm=T)>0,T,F)
+  ) |> 
+  ungroup()
+
+df |> 
+  count(i.any_flood)
+
+df |> 
+  ggplot(aes(x= i.any_flood, y= rs_rx5d_90d_may))+
+  geom_boxplot()
+```
+
+
+```{r}
+df |> 
+  ggplot(aes(x= as_factor(msni), y= rs_rx5d_90d_may))+
+  geom_boxplot()
+
+rain_rx_vs_msni <- dfsvy_overall |> 
+  filter(!is.na(longitude),!is.na(msni)) |> 
+  group_by(msni = as_factor(msni)) |> 
+  summarise(
+    pct_weighted= survey_mean(rs_rx5d_90d_may, vartype = "ci"),
+    n = unweighted(n())
+  ) |> 
+  arrange(desc(pct_weighted))
+
+rain_rx_vs_msni |> 
+    ggplot(aes(x= msni,
+             y=pct_weighted
+  ))+
+  geom_bar(stat="identity",position= "dodge")+
+    geom_errorbar(
+    aes(ymin = `pct_weighted_low`,
+        ymax = `pct_weighted_upp`), 
+                width = 0.2)+
+  geom_text(aes(label=n,x=msni ,y=20, fill=NULL)) +
+  ggtitle(label = "NGA MSNA 2022: average max 5 day rainfall intensity by MSNI",
+         subtitle = "Higher rainfall intensity is associated with hgher MSNI needs")+
+  labs(x="MSNI", y= "Average max 5 day rainfall intensity for May (mm)")+
+  theme_bw()
+
+```
+
+
+
+```{r}
+
+
 xlsf_query(xlsf = kobo, pattern = "diff_or_shocks",.col = "xml_name")
+xlsf_query(xlsf = kobo, pattern = "drought")
+
+
+
 
 df |> 
   count(`shock_impact_ability` )
