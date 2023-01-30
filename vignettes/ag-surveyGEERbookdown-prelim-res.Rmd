@@ -1,0 +1,437 @@
+---
+title: "ag-surveyGEERbookdown-prelim-res"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ag-surveyGEERbookdown-prelim-res}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+thematic::thematic_on()
+library(tidyverse)
+library(srvyr)
+library(here)
+list.files("R",full.names = T) |> purrr::map(~source(.x))
+targets::tar_load(nga_svy)
+# tar_render(report_trigger_overview,"pipeline/drc_cholera_trigger_overview_report.Rmd"),
+```
+
+# Preliminary
+
+This chapter will walk through some of the initial exploratory analysis performed so far
+
+## Overview
+
+Below we show an overview map of the assessment activities carried out in Somalia, Nigeria, Iraq, and Colombia.
+Not going to give an overview of each countries climate yet
+
+```{r overviewmap}
+summary(cars)
+```
+
+
+## Nigeria
+
+Before exploring how remote sensing derived indicators might impact or relate to household indicators/questions we have to first understand what household indicators are most useful and representative of needs/conditions at the household level. Additionally, to relate the indicators designed in the assessment research design to environmental indicators we do need clear hypotheses of why/how an environmental condition could effect these measurements at the household level. This is difficult for an external analyst and is discussed further in the limitation/discussion section.
+
+
+### Indicators/hypotheses
+
+Going into this exercise we understood that generally food security, income/livelihoods, and potentially health related indicators would be the most opportune ares to relate to environmental indicators. Unfortunately the NGA data is light on food security (see limitations) therefore we shift towards income and start with some research questions and go on to break these into sub-research questions with hypothes:
+
+- overall income for the HH was collected as a categorical ordinal question.
+  + Can we identify major drivers of income
+- dsalkfadsk
+
+
+### Income Exploration
+
+Before attempting correlation/association with environmental variables we have to figure out if there are any other major drivers of income that we need to account for. If we plot estimate income by gender HoH (Figure \@ref(fig:plot-ngaIncomeGender)) it becomes evident that male headed households dominate the higher income brackets and female the lower income brackets.
+
+```{r}
+nga_svy$data_main <- nga_svy$data_main |> 
+  mutate(
+        overall_income_estimate=xlsf:::label_vec_from_xml(xlsf = nga_svy,q_name = "overall_income_estimate"),
+        nearest_health_care = xlsf:::label_vec_from_xml(xlsf=nga_svy, q_name="nearest_health_care")
+  ) 
+
+
+nga_svy$data_main  |> 
+   group_by(gender_hoh,overall_income_estimate) |> 
+  summarise(
+    survey_mean(vartype = "ci")
+  ) |> 
+  ggplot(aes(x= overall_income_estimate, y=coef,color=gender_hoh))+
+  scale_y_continuous(labels = scales::percent)+
+  geom_errorbar(aes(ymin=`_low`, ymax=`_upp`))+
+  labs(x= "HH Income Estimate")+
+  geom_point()+
+  coord_flip()+ 
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank()
+  )
+```
+
+
+Since we see this discrepancy let's look at the sample size quickly for 
+```{r}
+nga_svy$data_main |> 
+  group_by(gender_hoh) |> 
+  summarise(
+    n=n()
+  ) |> 
+  knitr::kable()
+
+```
+
+
+
+```{r plot-ngaIncomeGender, eval =T,echo=F, results="asis"}
+knitr::include_graphics("man/figures/plot_nga_income_vs_genderhoh.png")
+
+```
+
+Since we know income is important let's have  quick look 
+
+Based on guidance from the country office we used MODIS data to extract the median NDVI anomaly around all for the previous 2021 growing season (june 20 - September 26). If we plot those values against income (just male hoh for now) we do not see a clear trend. We just see that all HHs generally tend to have slight negative Z-score for NDVI in the previous growing season.
+
+```{r}
+
+nga_svy$data_main  |> 
+   group_by(gender_hoh,overall_income_estimate) |> 
+  summarise(
+    survey_mean(rs_NDVI_pct_median_May2022,vartype = "ci",na.rm=T),
+    bla=unweighted(n())
+  ) |>
+  filter(gender_hoh=="male") |>
+  ggplot(aes(x= overall_income_estimate,
+             y=coef,
+             color=gender_hoh
+             ))+
+  scale_y_continuous(labels = scales::percent)+
+  geom_errorbar(aes(ymin=`_low`, ymax=`_upp`))+
+  labs(x= "HH Income Estimate")+
+  geom_point()+
+  coord_flip()+ 
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank()
+  )
+
+nga_svy$data_main  |> 
+   group_by(gender_hoh,overall_income_estimate) |> 
+  summarise(
+    survey_mean(rs_ndvi_z_growing_season_21,vartype = "ci",na.rm=T),
+    bla=unweighted(n())
+  ) |>
+  filter(gender_hoh=="male") |>
+  ggplot(aes(x= overall_income_estimate,
+             y=coef,
+             color=gender_hoh
+             ))+
+  # scale_y_continuous(labels = scales::percent)+
+  geom_errorbar(aes(ymin=`_low`, ymax=`_upp`))+
+  labs(x= "HH Income Estimate")+
+  geom_point()+
+  coord_flip()+ 
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank()
+  )
+```
+
+
+Now let's look at rainfall.
+```{r}
+# nga_svy$data_main$variables$rs_rx10d_90d_may
+nga_svy$data_main  |> 
+   group_by(gender_hoh,overall_income_estimate) |> 
+  summarise(
+    survey_mean(rs_rx10d_90d_may,vartype = "ci",na.rm=T),
+    bla=unweighted(n())
+  ) |>
+  filter(gender_hoh=="male") |>
+  ggplot(aes(x= overall_income_estimate,
+             y=coef,
+             color=gender_hoh
+             ))+
+  # scale_y_continuous(labels = scales::percent)+
+  geom_errorbar(aes(ymin=`_low`, ymax=`_upp`))+
+  labs(x= "HH Income Estimate")+
+  geom_point()+
+  coord_flip()+ 
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank()
+  )
+
+```
+
+
+```{r}
+nga_svy$data_main |> 
+  group_by(overall_income_estimate,gender_hoh,i.have_cattle=`hh_situation/catte_rearing`) |> 
+  summarise(
+    pct_mean = survey_mean()
+  ) |> 
+  # filter(i.have_cattle==T) |>
+  ggplot(aes(x= overall_income_estimate,
+             y=pct_mean
+             ))+
+  geom_line(aes(group=overall_income_estimate) )+
+  geom_point(aes(color=gender_hoh),stat="identity",position= "dodge")+
+  facet_wrap(~i.have_cattle,scales = "free")+
+  coord_flip()+
+  theme_bw()
+```
+
+
+Does having cattle affect reported income bracket?
+
+For female headed households it looks like the answer is no. For male headed households we see that the higher income brackets tend to be more likely to own cattle, whereas the lower income brackets do not.
+
+```{r}
+nga_svy$data_main |> 
+  # filter(gender_hoh=="male") |> 
+  group_by(gender_hoh,i.have_cattle=`hh_situation/catte_rearing`,overall_income_estimate) |> 
+  summarise(
+    pct_mean = survey_mean()
+  ) |> 
+  # filter(i.have_cattle==T) |>
+  ggplot(aes(x= overall_income_estimate,
+             y=pct_mean
+             ))+
+  geom_line(aes(group=overall_income_estimate) )+
+  geom_point(aes(color=i.have_cattle),stat="identity",position= "dodge")+
+  scale_y_continuous(labels = scales::percent)+
+  facet_wrap(~gender_hoh,scales = "free")+
+  coord_flip()+
+  theme_bw()
+```
+
+```{r}
+nga_svy$data_main |> 
+  # filter(gender_hoh=="male") |> 
+  group_by(gender_hoh,rs_alos_landforms,overall_income_estimate) |> 
+  summarise(
+    pct_mean = survey_mean()
+  ) |> 
+  # filter(i.have_cattle==T) |>
+  ggplot(aes(x= overall_income_estimate,
+             y=pct_mean
+             ))+
+  # geom_line(aes(group=overall_income_estimate) )+
+  # geom_point(aes(color=i.have_cattle),stat="identity",position= "dodge")+
+  geom_bar(aes(fill=rs_alos_landforms),stat="identity",position= "dodge")+
+  scale_y_continuous(labels = scales::percent)+
+  facet_wrap(~gender_hoh,scales = "free")+
+  coord_flip()+
+  theme_bw()
+
+nga_svy$data_main |> 
+  # filter(gender_hoh=="male") |> 
+  group_by(gender_hoh,overall_income_estimate,rs_alos_landforms) |> 
+  summarise(
+    pct_mean = survey_mean()
+  ) |> 
+  # filter(i.have_cattle==T) |>
+  ggplot(aes(x= overall_income_estimate,
+             y=pct_mean
+             ))+
+  # geom_line(aes(group=overall_income_estimate) )+
+  # geom_point(aes(color=i.have_cattle),stat="identity",position= "dodge")+
+  geom_bar(aes(fill=rs_alos_landforms),stat="identity",position= "dodge")+
+  scale_y_continuous(labels = scales::percent)+
+  facet_wrap(~gender_hoh,scales = "free")+
+  coord_flip()+
+  theme_bw()
+
+```
+
+### Accessibility
+
+Oxford Malaria project produced a global RS dataset in 2019 that predicts walking and total travel times to nearest health center. Here we test it against HH reports of travel times to nearest health center.
+
+```{r}
+
+nga_svy$data_main |> 
+  group_by(nearest_health_care) |> 
+  summarise(
+    pct_mean = survey_mean(rs_healthcare_accessbility_walking_only2019,na.rm=T,vartype="ci"),
+    n_unweighted=unweighted(n())
+  ) |> 
+  ggplot(aes(x= nearest_health_care,
+             y=pct_mean
+             ))+
+  geom_point()+
+  geom_errorbar(aes(ymin=pct_mean_low, ymax= pct_mean_upp, width=0.2))+
+  geom_line(group=1)+
+  geom_text(aes(label=n_unweighted,x=nearest_health_care,y=23, fill=NULL)) +
+  scale_y_continuous()+
+  labs(x="Reported Travel Time",
+       y="Remotely sensed walking time to healthcare facility (minutes)",
+         title = "Do reported walking travel times to nearest healthcare facility correlate with remotely sensed travel time?",
+       subtitle = "Northern Nigeria MSNA 2022",
+       caption = str_wrap("We see that the remotely sensed walking times to nearest health center do generally correlate with  HH reported travel times. However, RS calculations for HHs that reported over 15 minutes travel time do appear to be too low",180)
+  )+
+  theme_bw()+
+  theme(
+    plot.caption = element_text(hjust = 0),
+  )
+```
+
+
+Does the distance corroborate with accessibility indicators? yes it does, but results are under estimated
+
+```{r}
+nga_svy$data_main |> 
+  mutate(
+    i.nearest_healthcare_barrier = case_when(
+      nearest_health_care_adult %in% c("no_barriers","did_not_need")~"No Barrier",
+      nearest_health_care_adult == "no_facility_nearby"~"Too Far",
+      TRUE~NA_character_
+      )
+  ) |> 
+  filter(!is.na(i.nearest_healthcare_barrier)) |> 
+  group_by(i.nearest_healthcare_barrier) |> 
+  summarise(
+    pct_mean = survey_mean(rs_healthcare_accessbility_walking_only2019,na.rm=T,vartype="ci"),
+    n_unweighted=unweighted(n())
+  ) |> 
+  ggplot(aes(x= i.nearest_healthcare_barrier,
+             y=pct_mean
+             ))+
+  geom_point()+
+  geom_errorbar(aes(ymin=pct_mean_low, ymax= pct_mean_upp, width=0.2))+
+  # geom_line(group=1)+
+  geom_text(aes(label=n_unweighted,x=i.nearest_healthcare_barrier,y=23, fill=NULL)) +
+  scale_y_continuous()+
+    labs(x="Barrier to accessing facility?",
+       y="Remotely sensed walking time to healthcare facility (minutes)",
+         title = "RS does indicate farther walking times for those reporting distance as a barrier to accessing healthcare",
+       subtitle = "Northern Nigeria MSNA 2022",
+       caption = str_wrap("RS does corraborate, but the distances do appear underestimated",180)
+  )+
+  theme_bw()+
+  theme(
+    plot.caption = element_text(hjust = 0),
+  )
+```
+
+
+### MSNI
+
+It looks like increased rainfall intensify associated with increased MSNI needs, but there is weird spatial element.
+
+```{r}
+
+nga_svy$data_main |> 
+   group_by(msni=as_factor(msni)) |> 
+  summarise(
+    mean_pct = survey_mean(rs_rx5d_90d_may,na.rm=T,vartype = "ci")
+  ) |> 
+    ggplot(aes(x= msni,
+             y=mean_pct
+  ))+
+  geom_point(stat="identity")+
+  geom_line(group=1)+
+    geom_errorbar(
+    aes(ymin = `mean_pct_low`,
+        ymax = `mean_pct_upp`), 
+                width = 0.2)+
+  # geom_text(aes(label=n,x=variable_val ,y=20, fill=NULL)) +
+  ggtitle(label = "NGA MSNA 2022: average max 5 day rainfall intensity by MSNI",
+         subtitle = "Higher rainfall intensity is associated with higher MSNI needs")+
+  labs(x="MSNI",
+       y= "Average max 5 day rainfall intensity for May (mm)")+
+  theme_bw()
+```
+
+
+
+### Shocks
+ 
+```{r}
+nga_svy$data_main |> 
+  filter(shock_impact_ability%in% c("yes","no")) |> 
+  group_by(overall_income_estimate,shock_impact_ability) |> 
+  summarise(
+    pct_weighted= survey_mean( vartype = "ci",na.rm=T),
+    n = unweighted(n())
+  ) |> 
+  filter(shock_impact_ability=="yes") |> 
+  ggplot(aes(x=overall_income_estimate,
+             y= pct_weighted))+
+  geom_point(color="black")+
+  geom_errorbar(
+    aes(ymin = `pct_weighted_low`,
+        ymax = `pct_weighted_upp`), 
+                width = 0.2)+
+  
+  scale_y_continuous(
+    labels = scales::percent
+    )+
+  labs(x="Estimated Income (last 30 days)",
+       title = "HHs who reported shock: Did the impact of shocks cause hunger in your household?",
+       subtitle = "Northern Nigeria MSNA 2022",
+       caption = "Approximately 12 % of HHs reported a difficulties/shocks over the last 6 months, but HHs in higher income groups have increased resiliency\nand ability to absorb shocks and were less affected"
+       )+
+  coord_flip()+
+  theme_bw()+
+  theme(
+      plot.caption = element_text(hjust = 0),
+      axis.title.x = element_blank() 
+  )
+```
+
+generally true for both male and female hoh
+```{r}
+nga_svy$data_main |> 
+  filter(shock_impact_ability%in% c("yes","no")) |> 
+  group_by(overall_income_estimate,gender_hoh,shock_impact_ability) |> 
+  summarise(
+    pct_weighted= survey_mean( vartype = "ci",na.rm=T),
+    n = unweighted(n())
+  ) |> 
+  filter(shock_impact_ability=="yes") |> 
+  ggplot(aes(x=overall_income_estimate,
+             y= pct_weighted))+
+  geom_point(aes(color=gender_hoh))+
+  geom_line(aes(color=gender_hoh, group=gender_hoh))+
+  scale_y_continuous(
+    labels = scales::percent
+    )+
+  labs(x="Estimated Income (last 30 days)",
+       title = "HHs who reported shock: Did the impact of shocks cause hunger in your household?",
+       subtitle = "Northern Nigeria MSNA 2022",
+       caption = "Approximately 12 % of HHs reported a difficulties/shocks over the last 6 months, but HHs in higher income groups have increased resiliency\nand ability to absorb shocks and were less affected"
+       )+
+  coord_flip()+
+  theme_bw()+
+  theme(
+      plot.caption = element_text(hjust = 0),
+      axis.title.x = element_blank() 
+  )
+
+```
+
+## Colombia
+
+
+
+## Methodology
+
+RS indicators were made an extracted using GEE. This work is contained in the `{surveyGEER}` repository. Generally the indicators were extracted at the pixel level. Temporal RS data sources with longer timelines were typically preferred over those with shorter time lines so that pixel-values could be normalized to standard scores and indices such as percent mean/median could be constructed.
+
