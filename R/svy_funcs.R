@@ -26,26 +26,27 @@ svy_group_data <- function(df,disag){
 }
 
 
-svy_collapse_numeric <-  function(df, x,disag){
+svy_collapse_numeric <-  function(df, x,disag,vartype){
   x_sym <- sym(x)
   disag_sym <- syms(disag) # for filter w/ across (seems they removed the annoying sym/s warning)
   
   df <- df %>%
     filter(!is.na(!!x_sym)) %>%
-    filter(across(c(!!!disag_sym), ~ !is.na(.))) %>%  # remove NA in independent/s.
+    filter(if_any(!!!disag_sym, ~ !is.na(.))) |>   # remove NA in independent/s.
     svy_group_data(disag=disag)
   
   res <- df %>% 
     summarise(
-      mean_pct= srvyr::survey_mean(!!x_sym,vartype = "ci"),
-      # `median` = ifelse(all(is.na(!!x_sym)),NA,spatstat.geom::weighted.median(x=!!x_sym,w=!!wt_sym,na.rm=T)),
-      `variable` = x,
+      mean_pct= srvyr::survey_mean(!!x_sym,vartype = vartype),
+      variable = x,
+      variable_val= "Numeric",
       # variable_val=unique(!!x_sym,
       n_unweighted= srvyr::unweighted(n()),
       n_weighted =  n(),
       .groups = "drop"
-    ) |> 
-    dplyr::rename(variable_val=disag)
+    ) 
+  res <-  make_analysis_col_names(df = res,disag = disag)
+    
   return(res)
 
   
@@ -59,7 +60,7 @@ svy_pct_lgl <-  function(df, x,disag,sm_sep){
   
   df <- df %>% 
     filter(!is.na(!!x_sym)) %>%
-    filter(across(c(!!!disag_sym), ~ !is.na(.))) %>%  # remove NA in independent/s.
+    filter(if_any(!!!disag_sym, ~ !is.na(.))) %>%  # remove NA in independent/s.
     group_data(disag=disag)
   
   svy_counts <- df %>% 
@@ -77,7 +78,7 @@ svy_pct_lgl <-  function(df, x,disag,sm_sep){
   
   pct_res <-  df %>% 
     summarise(
-      `mean_pct` = srvyr::survey_mean(!!x_sym),
+      `mean_pct` = srvyr::survey_mean(!!x_sym,vartype = vartype),
       # n_unweighted=n(),
       # n_weighted= sum(!!wt_sym),
       
@@ -102,7 +103,12 @@ mutate_key_pair<- function(df, names, values){
     tibble::add_column(!!!set_names(as.list(values),nm=names))
 }
 
-svy_collapse_categorical <-  function(df, x,disag,sm_sep="/"){
+svy_collapse_categorical <-  function(df,
+                                      x,
+                                      disag,
+                                      vartype,
+                                      sm_sep="/"){
+  
   x_sym <- sym(x)
   disag_sym <- syms(disag)# for filter w/ across (seems they removed the annoying sym/s warning)
   
@@ -114,7 +120,7 @@ svy_collapse_categorical <-  function(df, x,disag,sm_sep="/"){
   
   res <- df |>  
     summarise(
-      mean_pct= srvyr::survey_mean(na.rm=T),
+      mean_pct= srvyr::survey_mean(na.rm=T,vartype = vartype),
       n_unweighted=srvyr::unweighted(n()),
       n_weighted=n(),
       .groups = "drop_last"
@@ -169,6 +175,8 @@ make_analysis_col_names <-  function(df, disag){
           "subset_6_name",
           "subset_6_val",
           "mean_pct",
+          "mean_pct_low",
+          "mean_pct_upp",
           "median",
           "n_weighted",
           "n_unweighted"
@@ -188,39 +196,10 @@ make_analysis_col_names <-  function(df, disag){
 
 
 
-fast_collapse2 <-  function(df, x_vec, disag, wt,sm_sep="/", force_numeric="none",group_name="none",sheet){
-  x_vec <- adjust_sm_vars(df, x_vec,sm_sep = sm_sep)
-  list_results <- list()
-  for(i in 1:length(x_vec)){
-    x_temp <- x_vec[i]
-    cat(crayon::yellow(x_temp),sep="\n")
-    vec_temp <- df[[x_temp]]
-    
-    if(class(vec_temp) %in% c("numeric","logical","integer")){
-      if((!is_binary(vec_temp)|!is.logical(vec_temp))|x_temp %in% force_numeric){
-        list_results[[i]] <- fast_collapse_numeric(df = df,x = x_temp,disag = disag,wt = wt) %>% 
-          mutate(table_id= paste0(group_name,",",x_temp))
-      }
-      if((is_binary(vec_temp)|is.logical(vec_temp))& !x_temp %in% force_numeric){ #&
-        # (is.null(force_numeric)|!(x_temp%in% force_numeric))){
-        df[[x_temp]] <- as.logical(vec_temp)
-        list_results[[i]] <- fast_collapse_lgl(df = df,x = x_temp,disag = disag,wt = wt,sm_sep=sm_sep) %>% 
-          mutate(table_id= paste0(group_name,",",x_temp))
-      }
-    }
-    if(class(vec_temp)%in% c("character","factor")){
-      list_results[[i]] <- fast_collapse_categorical(df = df,x = x_temp,disag = disag,wt = wt,sm_sep = sm_sep) %>% 
-        mutate(table_id= paste0(group_name,",",x_temp))
-    }
-    
-  }
-  res_df <- bind_rows(list_results) 
-  return(res_df)
-}
 
 
 
-svy_collapse <-  function(df, x_vec, disag,sm_sep){
+svy_collapse <-  function(df, x_vec, disag,vartype,sm_sep){
   x_vec <- adjust_sm_vars(df, x_vec,sm_sep = sm_sep)
   list_results <- list()
   for(i in 1:length(x_vec)){
@@ -233,13 +212,20 @@ svy_collapse <-  function(df, x_vec, disag,sm_sep){
         # (is.null(force_numeric)|!(x_temp%in% force_numeric))){
         df <- df |> 
           mutate(!!x_temp:=as.logical(!!sym(x_temp)))
-        list_results[[i]] <- svy_collapse_lgl(df = df,x = x_temp,disag = disag,sm_sep=sm_sep) 
+        list_results[[i]] <- svy_collapse_lgl(df = df,
+                                              x = x_temp,
+                                              disag = disag,
+                                              vartype=vartype,
+                                              sm_sep=sm_sep) 
       }else{
-        list_results[[i]] <- svy_collapse_numeric(df = df,x = x_temp,disag = disag) 
+        list_results[[i]] <- svy_collapse_numeric(df = df,x = x_temp,disag = disag,vartype=vartype) 
       }
     }
     if(class(vec_temp)%in% c("character","factor")){
-      list_results[[i]] <- svy_collapse_categorical(df = df,x = x_temp,disag = disag,sm_sep = sm_sep)
+      list_results[[i]] <- svy_collapse_categorical(df = df,
+                                                    x = x_temp,
+                                                    disag = disag,
+                                                    sm_sep = sm_sep,vartype=vartype)
     }
     
   }
@@ -272,5 +258,36 @@ auto_sm_parent_child <- function(df, sm_sep="/"){
   )
   
 }
+
+
+plot_numeric_svy_res <-  function(df,type="line",coord_flip=F){
+  
+  x_lab <- unique(df$subset_1_name)
+  y_lab <- unique(df$variable)
+  
+  p <- df |> 
+    ggplot(aes(x=subset_1_val,y=mean_pct)) 
+  
+  if(type=="line"){
+    p <- p +
+      geom_point(stat= "identity") +
+      geom_line(group=1)
+  }
+  if(type=="bar"){
+    p <-  p+ geom_bar(stat="identity")
+  }
+  p <- p+
+    geom_errorbar(
+      aes(ymin = `mean_pct_low`,
+          ymax = `mean_pct_upp`), 
+      width = 0.2)+
+    labs(x=x_lab, y= y_lab)
+  if(coord_flip){
+    p <-  p + coord_flip()
+  }
+  p
+}
+
+
 
 

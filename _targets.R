@@ -31,7 +31,7 @@ list(
   # anything that might change
   tar_target(
     name = nga_msna_filepath,
-    command = file.path(input_dir(env_var = "MSNA2022_DIR",country_code = "nga"), "20221107_msna_with_rs_nga.rds"),
+    command = file.path(input_dir(env_var = "MSNA2022_DIR",country_code = "nga"), "20230130_msna_with_rs_nga.rds"),
     format = "file"
 #   format = "feather" # efficient storage of large data frames # nolint
   ),

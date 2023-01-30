@@ -1,22 +1,20 @@
 ---
-title: "Remote Sensing & Survey Analytics"
-subtitle: "Multi-Country Review"
-author: "Zack Arno"
-date: '2023-01-03'
-output:
-  html_document:
-    toc: TRUE
-    toc_float: TRUE
-    number_sections: FALSE
-    theme:
-      bg: "#D1D3D4"
-      fg: "#58585A"
-      primary: "#EE5859"
-      base_font:
-        google: "Roboto"
-      code_font:
-        google: "JetBrains Mono"
+title: "ag-surveyGEERbookdown-prelim-res"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ag-surveyGEERbookdown-prelim-res}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -29,16 +27,13 @@ targets::tar_load(nga_svy)
 # tar_render(report_trigger_overview,"pipeline/drc_cholera_trigger_overview_report.Rmd"),
 ```
 
-## Intro
+# Preliminary
 
-In 2022 alongside typical MSNA analysis an exercise was done to investigate integrating remote sensing into the more classical survey analyses. A series of relevant RS indicators were chosen and the adapted for 6 specific contexts where MSNAs were being carried out. These six contexts were Niger, Somalia, Mali, Haiti,Colombia, Niger, Iraq. Using Google Earth Engine (GEE) the remote sensing indicators chosen were pulled directly into the household level data sets and provided back to the field teams for expert contextualization and alignment to countries analytic framework.
-
-Along with the initial effort of extracting and sharing the RS data and the independent work of the country teams, this document and repository holds additional collaborative analyses for Somalia, Colombia, and Nigeria, Iraq. The countries selected for this document were chosen based on feedback and support received from the field.
-
+This chapter will walk through some of the initial exploratory analysis performed so far
 
 ## Overview
 
-Below we show an overview map of the assessment activities carried out in Somalia, Nigeria,Iraq, and Colombia.
+Below we show an overview map of the assessment activities carried out in Somalia, Nigeria, Iraq, and Colombia.
 Not going to give an overview of each countries climate yet
 
 ```{r overviewmap}
@@ -48,9 +43,21 @@ summary(cars)
 
 ## Nigeria
 
-### Income
+Before exploring how remote sensing derived indicators might impact or relate to household indicators/questions we have to first understand what household indicators are most useful and representative of needs/conditions at the household level. Additionally, to relate the indicators designed in the assessment research design to environmental indicators we do need clear hypotheses of why/how an environmental condition could effect these measurements at the household level. This is difficult for an external analyst and is discussed further in the limitation/discussion section.
 
-Pretty clear in NGA that gender_hoh is a big driver of income with male headed households dominating the higher income brackets and female the lower income brackets. Therefore environmental analysis of hh_income should take this into account.
+
+### Indicators/hypotheses
+
+Going into this exercise we understood that generally food security, income/livelihoods, and potentially health related indicators would be the most opportune ares to relate to environmental indicators. Unfortunately the NGA data is light on food security (see limitations) therefore we shift towards income and start with some research questions and go on to break these into sub-research questions with hypothes:
+
+- overall income for the HH was collected as a categorical ordinal question.
+  + Can we identify major drivers of income
+- dsalkfadsk
+
+
+### Income Exploration
+
+Before attempting correlation/association with environmental variables we have to figure out if there are any other major drivers of income that we need to account for. If we plot estimate income by gender HoH (Figure \@ref(fig:plot-ngaIncomeGender)) it becomes evident that male headed households dominate the higher income brackets and female the lower income brackets.
 
 ```{r}
 nga_svy$data_main <- nga_svy$data_main |> 
@@ -66,13 +73,111 @@ nga_svy$data_main  |>
     survey_mean(vartype = "ci")
   ) |> 
   ggplot(aes(x= overall_income_estimate, y=coef,color=gender_hoh))+
+  scale_y_continuous(labels = scales::percent)+
   geom_errorbar(aes(ymin=`_low`, ymax=`_upp`))+
+  labs(x= "HH Income Estimate")+
   geom_point()+
   coord_flip()+ 
-  theme_bw()
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank()
+  )
 ```
 
 
+Since we see this discrepancy let's look at the sample size quickly for 
+```{r}
+nga_svy$data_main |> 
+  group_by(gender_hoh) |> 
+  summarise(
+    n=n()
+  ) |> 
+  knitr::kable()
+
+```
+
+
+
+```{r plot-ngaIncomeGender, eval =T,echo=F, results="asis"}
+knitr::include_graphics("man/figures/plot_nga_income_vs_genderhoh.png")
+
+```
+
+Since we know income is important let's have  quick look 
+
+Based on guidance from the country office we used MODIS data to extract the median NDVI anomaly around all for the previous 2021 growing season (june 20 - September 26). If we plot those values against income (just male hoh for now) we do not see a clear trend. We just see that all HHs generally tend to have slight negative Z-score for NDVI in the previous growing season.
+
+```{r}
+
+nga_svy$data_main  |> 
+   group_by(gender_hoh,overall_income_estimate) |> 
+  summarise(
+    survey_mean(rs_NDVI_pct_median_May2022,vartype = "ci",na.rm=T),
+    bla=unweighted(n())
+  ) |>
+  filter(gender_hoh=="male") |>
+  ggplot(aes(x= overall_income_estimate,
+             y=coef,
+             color=gender_hoh
+             ))+
+  scale_y_continuous(labels = scales::percent)+
+  geom_errorbar(aes(ymin=`_low`, ymax=`_upp`))+
+  labs(x= "HH Income Estimate")+
+  geom_point()+
+  coord_flip()+ 
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank()
+  )
+
+nga_svy$data_main  |> 
+   group_by(gender_hoh,overall_income_estimate) |> 
+  summarise(
+    survey_mean(rs_ndvi_z_growing_season_21,vartype = "ci",na.rm=T),
+    bla=unweighted(n())
+  ) |>
+  filter(gender_hoh=="male") |>
+  ggplot(aes(x= overall_income_estimate,
+             y=coef,
+             color=gender_hoh
+             ))+
+  # scale_y_continuous(labels = scales::percent)+
+  geom_errorbar(aes(ymin=`_low`, ymax=`_upp`))+
+  labs(x= "HH Income Estimate")+
+  geom_point()+
+  coord_flip()+ 
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank()
+  )
+```
+
+
+Now let's look at rainfall.
+```{r}
+# nga_svy$data_main$variables$rs_rx10d_90d_may
+nga_svy$data_main  |> 
+   group_by(gender_hoh,overall_income_estimate) |> 
+  summarise(
+    survey_mean(rs_rx10d_90d_may,vartype = "ci",na.rm=T),
+    bla=unweighted(n())
+  ) |>
+  filter(gender_hoh=="male") |>
+  ggplot(aes(x= overall_income_estimate,
+             y=coef,
+             color=gender_hoh
+             ))+
+  # scale_y_continuous(labels = scales::percent)+
+  geom_errorbar(aes(ymin=`_low`, ymax=`_upp`))+
+  labs(x= "HH Income Estimate")+
+  geom_point()+
+  coord_flip()+ 
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank()
+  )
+
+```
 
 
 ```{r}
