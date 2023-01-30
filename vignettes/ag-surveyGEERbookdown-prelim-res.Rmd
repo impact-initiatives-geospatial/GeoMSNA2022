@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-thematic::thematic_on()
+# thematic::thematic_on()
 library(tidyverse)
 library(srvyr)
 library(here)
@@ -105,14 +105,15 @@ knitr::include_graphics("man/figures/plot_nga_income_vs_genderhoh.png")
 
 Since we know income is important let's have  quick look 
 
-Based on guidance from the country office we used MODIS data to extract the median NDVI anomaly around all for the previous 2021 growing season (june 20 - September 26). If we plot those values against income (just male hoh for now) we do not see a clear trend. We just see that all HHs generally tend to have slight negative Z-score for NDVI in the previous growing season.
+Based on guidance from the country office we used MODIS data to extract the median NDVI anomaly around all for the previous 2021 growing season (June 20 - September 26). If we plot those values against income (just male hoh for now) we do not see a clear trend. We just see that all HHs generally tend to have slight negative Z-score for NDVI in the previous growing season. 
+
 
 ```{r}
 
 nga_svy$data_main  |> 
    group_by(gender_hoh,overall_income_estimate) |> 
   summarise(
-    survey_mean(rs_NDVI_pct_median_May2022,vartype = "ci",na.rm=T),
+    survey_mean(rs_ndvi_z_growing_season_21,vartype = "ci",na.rm=T),
     bla=unweighted(n())
   ) |>
   filter(gender_hoh=="male") |>
@@ -120,7 +121,7 @@ nga_svy$data_main  |>
              y=coef,
              color=gender_hoh
              ))+
-  scale_y_continuous(labels = scales::percent)+
+  # scale_y_continuous(labels = scales::percent)+
   geom_errorbar(aes(ymin=`_low`, ymax=`_upp`))+
   labs(x= "HH Income Estimate")+
   geom_point()+
@@ -129,11 +130,53 @@ nga_svy$data_main  |>
   theme(
     axis.title.x = element_blank()
   )
+```
+
+This brings us to a large question mark on how we should aggregate RS data for HH analysis. The MODIS data we are using is 250 m therefore the pixels extracted at the HH do represent an area larger than the HH and could theoretically include small shareholder farming around the HH. However:
+
+- is 250 m sufficient to understand how agriculture/vegetative health in the area surrounding the HH could affect the HHs? 
+- Also I did manually scan satellite imagery in NW NGA in combination with the ESA global landcover and what became obvious is that while towns are rural they have a clear footprint. This means that aggregating hh points in the time rural towns would largely be influence by this cleared footprint. Additionally since we are calculating NDVI anomaly using all years on up to date of interest (2000-2021) HHs in new settlements and or settlements that have grown or become more urbanized in any way will be biased towards a negative ndvi anomaly signature
+- Therefore we extract the same data, but this time using the ESA urban mask as described in chapter xxx. In summary, we mask the urban area and the apply a focal median  to fill in the masked area. 
+
+First we try it with a focal window size of 4 pixels (1000 meters)
+
+```{r}
 
 nga_svy$data_main  |> 
    group_by(gender_hoh,overall_income_estimate) |> 
   summarise(
-    survey_mean(rs_ndvi_z_growing_season_21,vartype = "ci",na.rm=T),
+    survey_mean(rs_ndvi_z_growing_season_21_fs4,vartype = "ci",na.rm=T),
+    bla=unweighted(n())
+  ) |>
+  filter(gender_hoh=="male") |>
+  ggplot(aes(x= overall_income_estimate,
+             y=coef,
+             color=gender_hoh
+             ))+
+  # scale_y_continuous(labels = scales::percent)+
+  geom_errorbar(aes(ymin=`_low`, ymax=`_upp`))+
+  labs(x= "HH Income Estimate")+
+  geom_point()+
+  coord_flip()+ 
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank()
+  )
+```
+
+
+and then a focal window size of 10 pixels (2.5 km). This exercise seems quite insightful as the expected trend of higher income associated with healthier vegetation compared to normal. You can see that when the focal window was increased the anomaly values become less negative. This could very likely be do to the larger window minimizing the effect of urbanized pixels. 
+
+Now we must ask ourselves why are do the aomalies appear to be generally negative?
+
+- is it because it is a drier than normal year over the entire study area?
+- or is it potentially because of this urban affect on the anomalies. The increase in signature associated with increasing the window size suggests this is a possibility. It is quite likely that the ESA urban mask does not capture the full extent of the urban area in these rural towns. In additional to playing with the windows size a urban mask dilation procedure prior to masking should be explored - I hypothesize that the anomalies will shift more to more positive values and this relationship will also strengthen
+
+```{r}
+nga_svy$data_main  |> 
+   group_by(gender_hoh,overall_income_estimate) |> 
+  summarise(
+    survey_mean(rs_ndvi_z_growing_season_21_fs10,vartype = "ci",na.rm=T),
     bla=unweighted(n())
   ) |>
   filter(gender_hoh=="male") |>
